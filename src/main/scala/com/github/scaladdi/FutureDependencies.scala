@@ -2,6 +2,8 @@ package com.github.scaladdi
 
 import akka.actor.Props
 import akka.util.Timeout
+import shapeless.ops.function.FnToProduct
+import shapeless.syntax.std.function._
 import shapeless.{::, HList, HNil}
 
 import scala.reflect.ClassTag
@@ -20,15 +22,15 @@ class FutureDependencies[Futures <: HList, Values <: HList, DepFutures <: HList,
 
   import AlignReduceOps._
 
-  def requires[T, Req <: HList, FutReq <: HList](dependency: DynConfig[T, Req])
-    (implicit construct: Req => T,
+  def requires[T, Req <: HList, FutReq <: HList, F](dependency: DynConfig[T, Req])
+    (implicit funProduct: FnToProduct.Aux[F, Req => T], construct: F,
       toFutu: IsHListOfFutures[FutReq, Req],
       align: AlignReduce[Futures, FutReq]) = {
 
     new FutureDependencies[Future[T] :: Futures,
       T :: Values,
       Future[T] :: DepFutures,
-      T :: DepValues](toFutu.hsequence(dependencies.alignReduce[FutReq]).map(construct(_)) :: dependencies)
+      T :: DepValues](toFutu.hsequence(dependencies.alignReduce[FutReq]).map(construct.toProduct) :: dependencies)
   }
 
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])

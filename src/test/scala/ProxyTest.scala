@@ -21,7 +21,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   case class Shop(name: String)
 
-  case class Basket(user: User, shop: Shop, products: Int)
+  case class Basket(user: User, shop: Shop)
 
   case class Product(price: Int)
 
@@ -44,19 +44,17 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   object BasketDep extends DynConfig[Basket, User :: Shop :: HNil]
 
-  implicit def basket(us: User :: Shop :: HNil): Basket =
-    Basket(us.head, us(Nat._1), 3)
-
   case class AskForProducts(basket: Basket)
 
   def products(basket: Basket :: HNil) = AskForProducts(basket.head)
 
-  //Products((1 to basket.head.products).map(Product).toList)
-
   def actor(prods: Products :: Basket :: HNil) = Props(new PriceCalculator(prods.head))
 
-  "ooo" should {
-    "aaa" in {
+  "Proxied actor" should {
+
+    implicit def basket(u: User, s: Shop): Basket = Basket(u, s)
+
+    "be started and answer" in {
       val basketKeeper = new TestProbe(system)
       val props = deps isGiven
         findShop("Bakery") isGiven
@@ -66,7 +64,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
       val proxy = system.actorOf(props)
 
-      basketKeeper.expectMsg(AskForProducts(Basket(User("Greg"), Shop("Bakery"), 3)))
+      basketKeeper.expectMsg(AskForProducts(Basket(User("Greg"), Shop("Bakery"))))
       basketKeeper.reply(Products(List(Product(5), Product(10))))
 
       proxy ! Calculate
