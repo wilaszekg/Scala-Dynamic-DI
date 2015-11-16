@@ -1,13 +1,12 @@
 package com.github.scaladdi
 
-import scala.concurrent.{ExecutionContext, Future}
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Props, ActorRef}
 import shapeless.ops.hlist.Prepend
-import shapeless.{|¬|, HNil, HList, ::}
+import shapeless._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-// czy nieuzywane typy mozna zastapic przez _ ?
+//TODO: czy nieuzywane typy mozna zastapic przez _ ?
 class ActorDependencies[Futures <: HList, Values <: HList, DepFutures <: HList, DepValues <: HList, AD <: HList, FAD <: HList, Responses <: HList, Failures <: HList](
   val futureDeps: FutureDependencies[Futures, Values, DepFutures, DepValues], val actorDeps: FAD)
   (implicit isActorDeps: IsActorDeps[AD, Responses, Failures],
@@ -15,11 +14,14 @@ class ActorDependencies[Futures <: HList, Values <: HList, DepFutures <: HList, 
     futureActorDeps: IsHListOfFutures[FAD, AD],
     ec: ExecutionContext) {
 
+  type Expected = Responses
   import AlignReduceOps._
 
   def and[Q <: HList, R, F, FQ <: HList](dep: ActorDep[Q, R, F])
-    (implicit notInResponses: NotIn[R, Responses],
-      notInFailures: NotIn[F, Failures],
+    (implicit rNotInResponses: NotIn[R, Responses],
+      fNotInFailures: NotIn[F, Failures],
+      rNotInFailures: NotIn[R, Failures],
+      fNotInResponses: NotIn[F, Responses],
       futured: IsHListOfFutures[FQ, Q],
       align: AlignReduce[Futures, FQ],
       prependNewResult: Prepend[DepValues, R :: Responses]) = {
@@ -29,6 +31,10 @@ class ActorDependencies[Futures <: HList, Values <: HList, DepFutures <: HList, 
       futured.hsequence(futureDeps.dependencies.alignReduce[FQ])
         .map(x => ActorDepAction[R, F](dep.who, dep.question(x))) :: actorDeps
     )
+  }
+
+  def produce(f: joinResults.Out => Props): Props = {
+    Props(new ProxyActor(this))
   }
 }
 
@@ -64,11 +70,5 @@ trait NotIn[T, L <: HList]
 object NotIn {
   implicit def notInHNil[T] = new NotIn[T, HNil] {}
 
-  implicit def notInList[H, T <: |¬|[H], L <: HList](implicit notInTail: NotIn[T, L]) = new NotIn[T, H :: L] {} // lambda
+  implicit def notInList[H, T, L <: HList](implicit ineq: <:!<[T, H], notInTail: NotIn[T, L]) = new NotIn[T, H :: L] {} // lambda
 }
-
-
-
-
-//ActorDependencies[Futures, Values, DepFutures, DepValues, ActorDepAction[dep.Response, dep.Failure] :: AD,
-//  Future[ActorDepAction[dep.Response, dep.Failure]] :: FAD, dep.Response :: Responses, dep.Failure :: Failures]
