@@ -47,7 +47,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   def products(basket: Basket): Any = AskForProducts(basket)
 
-  def actor(prods: Products, b: Basket) = Props(new PriceCalculator(prods))
+  def actor(prods: Products) = Props(new PriceCalculator(prods))
 
   "Proxied actor" should {
 

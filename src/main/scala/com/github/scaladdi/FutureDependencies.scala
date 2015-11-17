@@ -12,10 +12,8 @@ trait DynConfig[T, Args <: HList]
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FutureDependencies[Futures <: HList, Values <: HList, DepFutures <: HList, DepValues <: HList : ClassTag](val dependencies: Futures)
-  (implicit toFuture: IsHListOfFutures[Futures, Values],
-    val toDepFuture: IsHListOfFutures[DepFutures, DepValues],
-    alignToDeps: AlignReduce[Futures, DepFutures],
+class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val dependencies: DepFutures)
+  (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues],
     ec: ExecutionContext) {
 
   type TempDepFut = DepFutures
@@ -25,17 +23,15 @@ class FutureDependencies[Futures <: HList, Values <: HList, DepFutures <: HList,
   def requires[T, Req <: HList, FutReq <: HList, F](dependency: DynConfig[T, Req])
     (implicit funProduct: FnToProduct.Aux[F, Req => T], construct: F,
       toFutu: IsHListOfFutures[FutReq, Req],
-      align: AlignReduce[Futures, FutReq]) = {
+      align: AlignReduce[DepFutures, FutReq]) = {
 
-    new FutureDependencies[Future[T] :: Futures,
-      T :: Values,
-      Future[T] :: DepFutures,
+    new FutureDependencies[Future[T] :: DepFutures,
       T :: DepValues](toFutu.hsequence(dependencies.alignReduce[FutReq]).map(construct.toProduct) :: dependencies)
   }
 
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])
     (implicit toFutu: IsHListOfFutures[FutReq, Req],
-      align: AlignReduce[Futures, FutReq],
+      align: AlignReduce[DepFutures, FutReq],
       timeout: Timeout) = {
 
     import akka.pattern.ask
@@ -43,19 +39,18 @@ class FutureDependencies[Futures <: HList, Values <: HList, DepFutures <: HList,
       actorDep.who ? actorDep.question(req)
     }.collect { case t: T => t }
 
-    new FutureDependencies[Future[T] :: Futures,
-      T :: Values,
-      Future[T] :: DepFutures,
-      T :: DepValues](d :: dependencies)
+    new FutureDependencies[Future[T] :: DepFutures, T :: DepValues](d :: dependencies)
   }
 
   def isGiven[T](future: Future[T]) = {
-    new FutureDependencies[Future[T] :: Futures, T :: Values, DepFutures, DepValues](future :: dependencies)
+    new FutureDependencies[Future[T] :: DepFutures, T :: DepValues](future :: dependencies)
   }
 
-  def result: Future[DepValues] = toDepFuture.hsequence(dependencies.alignReduce[DepFutures])
+  def result: Future[DepValues] = toDepFuture.hsequence(dependencies)
 
-  def props[F](fun: F, dependencyError: Throwable => Any = defaultError)(implicit funOfDeps: FnToProduct.Aux[F, DepValues => Props]) =
+  def props[F, Req <: HList : ClassTag](fun: F, dependencyError: Throwable => Any = defaultError)
+    (implicit funOfDeps: FnToProduct.Aux[F, Req => Props],
+      align: AlignReduce[DepValues, Req]) =
     Props(new ProxyActor(this, fun.toProduct, dependencyError))
 
   private def defaultError(t: Throwable) = DynamicConfigurationFailure(t)
@@ -65,7 +60,7 @@ case class DynamicConfigurationFailure(t: Throwable)
 
 object FutureDependencies {
 
-  def deps(implicit ec: ExecutionContext): FutureDependencies[HNil, HNil, HNil, HNil] = {
-    new FutureDependencies[HNil, HNil, HNil, HNil](HNil)
+  def deps(implicit ec: ExecutionContext): FutureDependencies[HNil, HNil] = {
+    new FutureDependencies[HNil, HNil](HNil)
   }
 }
