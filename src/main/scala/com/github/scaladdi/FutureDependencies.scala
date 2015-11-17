@@ -23,27 +23,26 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
   def requires[T, Req <: HList, FutReq <: HList, F](dependency: DynConfig[T, Req])
     (implicit funProduct: FnToProduct.Aux[F, Req => T], construct: F,
       toFutu: IsHListOfFutures[FutReq, Req],
-      align: AlignReduce[DepFutures, FutReq]) = {
+      align: AlignReduce[DepFutures, FutReq]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
-    new FutureDependencies[Future[T] :: DepFutures,
-      T :: DepValues](toFutu.hsequence(dependencies.alignReduce[FutReq]).map(construct.toProduct) :: dependencies)
+    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(construct.toProduct) :: dependencies)
   }
 
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])
     (implicit toFutu: IsHListOfFutures[FutReq, Req],
       align: AlignReduce[DepFutures, FutReq],
-      timeout: Timeout) = {
+      timeout: Timeout): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
     import akka.pattern.ask
     val d = toFutu.hsequence(dependencies.alignReduce[FutReq]).flatMap { req =>
       actorDep.who ? actorDep.question(req)
     }.collect { case t: T => t }
 
-    new FutureDependencies[Future[T] :: DepFutures, T :: DepValues](d :: dependencies)
+    new FutureDependencies(d :: dependencies)
   }
 
-  def isGiven[T](future: Future[T]) = {
-    new FutureDependencies[Future[T] :: DepFutures, T :: DepValues](future :: dependencies)
+  def isGiven[T](future: Future[T]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+    new FutureDependencies(future :: dependencies)
   }
 
   def result: Future[DepValues] = toDepFuture.hsequence(dependencies)
@@ -61,6 +60,6 @@ case class DynamicConfigurationFailure(t: Throwable)
 object FutureDependencies {
 
   def deps(implicit ec: ExecutionContext): FutureDependencies[HNil, HNil] = {
-    new FutureDependencies[HNil, HNil](HNil)
+    new FutureDependencies(HNil)
   }
 }
