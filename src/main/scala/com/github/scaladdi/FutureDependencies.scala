@@ -16,8 +16,6 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
   (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues],
     ec: ExecutionContext) {
 
-  type TempDepFut = DepFutures
-
   import AlignReduceOps._
 
   def requires[T, Req <: HList, FutReq <: HList, F](dependency: DynConfig[T, Req])
