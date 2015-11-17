@@ -23,7 +23,8 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
   def requires[T, Req <: HList, FutReq <: HList, F](dependency: DynConfig[T, Req])
     (implicit funProduct: FnToProduct.Aux[F, Req => T], construct: F,
       toFutu: IsHListOfFutures[FutReq, Req],
-      align: AlignReduce[DepFutures, FutReq]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+      align: AlignReduce[DepFutures, FutReq],
+      tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
     new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(construct.toProduct) :: dependencies)
   }
@@ -31,7 +32,7 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])
     (implicit toFutu: IsHListOfFutures[FutReq, Req],
       align: AlignReduce[DepFutures, FutReq],
-      timeout: Timeout): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+      timeout: Timeout, tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
     import akka.pattern.ask
     val d = toFutu.hsequence(dependencies.alignReduce[FutReq]).flatMap { req =>
@@ -41,7 +42,7 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
     new FutureDependencies(d :: dependencies)
   }
 
-  def isGiven[T](future: Future[T]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+  def isGiven[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
     new FutureDependencies(future :: dependencies)
   }
 
