@@ -46,7 +46,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   case class AskForProducts(basket: Basket)
 
-  def products(basket: Basket :: HNil) = AskForProducts(basket.head)
+  def products(basket: Basket): Any = AskForProducts(basket)
 
   def actor(prods: Products :: Basket :: HNil) = Props(new PriceCalculator(prods.head))
 
@@ -60,7 +60,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
         findShop("Bakery") isGiven
         findUser("Greg") requires
         BasketDep requires
-        ActorDep[Basket :: HNil, Products](basketKeeper.ref, products) props actor
+        ActorDep(basketKeeper.ref, products _, classOf[Products]) props actor
 
       val proxy = system.actorOf(props)
 
