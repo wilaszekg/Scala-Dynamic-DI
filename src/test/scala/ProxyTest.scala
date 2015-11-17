@@ -1,15 +1,14 @@
-import akka.actor.Actor.Receive
-import akka.actor.{Props, Actor, ActorSystem}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe, TestKitBase}
+import akka.actor.{Actor, ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import com.github.scaladdi.{ActorDep, DynConfig}
-import org.scalatest.{WordSpecLike, WordSpec}
-import shapeless.{Nat, HNil, ::}
 import com.github.scaladdi.FutureDependencies._
+import com.github.scaladdi.{ActorDep, DynConfig}
+import org.scalatest.WordSpecLike
+import shapeless.{::, HNil}
 
 import scala.concurrent.Future
-import scala.language.implicitConversions
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike with ImplicitSender {
 
@@ -48,7 +47,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   def products(basket: Basket): Any = AskForProducts(basket)
 
-  def actor(prods: Products :: Basket :: HNil) = Props(new PriceCalculator(prods.head))
+  def actor(prods: Products, b: Basket) = Props(new PriceCalculator(prods))
 
   "Proxied actor" should {
 
@@ -60,7 +59,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
         findShop("Bakery") isGiven
         findUser("Greg") requires
         BasketDep requires
-        ActorDep(basketKeeper.ref, products _, classOf[Products]) props actor
+        ActorDep(basketKeeper.ref, products _, classOf[Products]) props actor _
 
       val proxy = system.actorOf(props)
 

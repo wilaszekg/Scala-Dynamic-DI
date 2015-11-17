@@ -55,8 +55,8 @@ class FutureDependencies[Futures <: HList, Values <: HList, DepFutures <: HList,
 
   def result: Future[DepValues] = toDepFuture.hsequence(dependencies.alignReduce[DepFutures])
 
-  def props(fun: DepValues => Props, dependencyError: Throwable => Any = defaultError) =
-    Props(new ProxyActor(this, fun, dependencyError))
+  def props[F](fun: F, dependencyError: Throwable => Any = defaultError)(implicit funOfDeps: FnToProduct.Aux[F, DepValues => Props]) =
+    Props(new ProxyActor(this, fun.toProduct, dependencyError))
 
   private def defaultError(t: Throwable) = DynamicConfigurationFailure(t)
 }
