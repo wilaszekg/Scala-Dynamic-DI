@@ -4,13 +4,10 @@ import akka.actor.Props
 import akka.util.Timeout
 import shapeless.ops.function.FnToProduct
 import shapeless.syntax.std.function._
-import shapeless.{::, HList, HNil}
+import shapeless.{Generic, ::, HList, HNil}
 
 import scala.reflect.ClassTag
 
-trait DynConfig[T, Args <: HList] {
-  def apply(args: Args): T
-}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,12 +17,13 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
 
   import AlignReduceOps._
 
-  def requires[T, Req <: HList, FutReq <: HList](dependency: DynConfig[T, Req])
-    (implicit toFutu: IsHListOfFutures[FutReq, Req],
+  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: DynConfig[T, Args])
+    (implicit genArgs: Generic.Aux[Args, Req],
+      toFutu: IsHListOfFutures[FutReq, Req],
       align: AlignReduce[DepFutures, FutReq],
       tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
-    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(args => dependency.apply(args)) :: dependencies)
+    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(args => dependency.apply(genArgs from args)) :: dependencies)
   }
 
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])

@@ -41,9 +41,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     }
   }
 
-  object BasketDep extends DynConfig[Basket, User :: Shop :: HNil] {
-    override def apply(args: ::[User, ::[Shop, HNil]]): Basket = Basket(args.head, args.tail.head)
-  }
+  val basketDep: DynConfig[Basket, (User, Shop)] = DynConfig((user: User, shop: Shop) => Basket(user, shop))
 
   case class AskForProducts(basket: Basket)
 
@@ -58,7 +56,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       val props = deps isGiven
         findShop("Bakery") isGiven
         findUser("Greg") requires
-        BasketDep requires
+        basketDep requires
         ActorDep(basketKeeper.ref, products _, classOf[Products]) props actor _
 
       val proxy = system.actorOf(props)
