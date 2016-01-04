@@ -8,7 +8,9 @@ import shapeless.{::, HList, HNil}
 
 import scala.reflect.ClassTag
 
-trait DynConfig[T, Args <: HList]
+trait DynConfig[T, Args <: HList] {
+  def apply(args: Args): T
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -18,13 +20,12 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
 
   import AlignReduceOps._
 
-  def requires[T, Req <: HList, FutReq <: HList, F](dependency: DynConfig[T, Req])
-    (implicit funProduct: FnToProduct.Aux[F, Req => T], construct: F,
-      toFutu: IsHListOfFutures[FutReq, Req],
+  def requires[T, Req <: HList, FutReq <: HList](dependency: DynConfig[T, Req])
+    (implicit toFutu: IsHListOfFutures[FutReq, Req],
       align: AlignReduce[DepFutures, FutReq],
       tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
-    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(construct.toProduct) :: dependencies)
+    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(args => dependency.apply(args)) :: dependencies)
   }
 
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])
