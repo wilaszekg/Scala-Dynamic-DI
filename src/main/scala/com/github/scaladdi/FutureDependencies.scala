@@ -17,13 +17,22 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
 
   import AlignReduceOps._
 
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: DynConfig[T, Args])
+  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[T, Args])
     (implicit genArgs: Generic.Aux[Args, Req],
       toFutu: IsHListOfFutures[FutReq, Req],
       align: AlignReduce[DepFutures, FutReq],
       tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
     new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(args => dependency.apply(genArgs from args)) :: dependencies)
+  }
+
+  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[T, Args])
+    (implicit genArgs: Generic.Aux[Args, Req],
+      toFutu: IsHListOfFutures[FutReq, Req],
+      align: AlignReduce[DepFutures, FutReq],
+      tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+
+    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).flatMap(args => dependency.apply(genArgs from args)) :: dependencies)
   }
 
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])
@@ -39,8 +48,12 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
     new FutureDependencies(d :: dependencies)
   }
 
-  def isGiven[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+  def withFuture[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
     new FutureDependencies(future :: dependencies)
+  }
+
+  def withVal[T](value: T)(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+    withFuture(Future.successful(value))
   }
 
   def result: Future[DepValues] = toDepFuture.hsequence(dependencies)
