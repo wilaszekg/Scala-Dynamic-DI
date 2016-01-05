@@ -14,33 +14,33 @@ import scala.concurrent.{ExecutionContext, Future}
 class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: => DepFutures)
   (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues], ec: ExecutionContext) {
 
-  import AlignReduceOps._
+  import FindAlignedOps._
 
   def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[T, Args])
     (implicit genArgs: Generic.Aux[Args, Req],
       toFutu: IsHListOfFutures[FutReq, Req],
-      align: AlignReduce[DepFutures, FutReq],
+      align: FindAligned[DepFutures, FutReq],
       tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
-    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).map(args => dependency.apply(genArgs from args)) :: dependencies)
+    new FutureDependencies(toFutu.hsequence(dependencies.findAligned[FutReq]).map(args => dependency.apply(genArgs from args)) :: dependencies)
   }
 
   def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[T, Args])
     (implicit genArgs: Generic.Aux[Args, Req],
       toFutu: IsHListOfFutures[FutReq, Req],
-      align: AlignReduce[DepFutures, FutReq],
+      align: FindAligned[DepFutures, FutReq],
       tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
-    new FutureDependencies(toFutu.hsequence(dependencies.alignReduce[FutReq]).flatMap(args => dependency.apply(genArgs from args)) :: dependencies)
+    new FutureDependencies(toFutu.hsequence(dependencies.findAligned[FutReq]).flatMap(args => dependency.apply(genArgs from args)) :: dependencies)
   }
 
   def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])
     (implicit toFutu: IsHListOfFutures[FutReq, Req],
-      align: AlignReduce[DepFutures, FutReq],
+      align: FindAligned[DepFutures, FutReq],
       timeout: Timeout, tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
     import akka.pattern.ask
-    def actorResponse = toFutu.hsequence(dependencies.alignReduce[FutReq]).flatMap { req =>
+    def actorResponse = toFutu.hsequence(dependencies.findAligned[FutReq]).flatMap { req =>
       actorDep.who ? actorDep.question(req)
     }.collect { case t: T => t }
 
@@ -59,7 +59,7 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dep
 
   def props[F, Req <: HList : ClassTag](fun: F, dependencyError: Throwable => Any = defaultError)
     (implicit funOfDeps: FnToProduct.Aux[F, Req => Props],
-      align: AlignReduce[DepValues, Req]) =
+      align: FindAligned[DepValues, Req]) =
     Props(new ProxyActor(this, fun.toProduct, dependencyError))
 
   private def defaultError(t: Throwable) = DynamicConfigurationFailure(t)

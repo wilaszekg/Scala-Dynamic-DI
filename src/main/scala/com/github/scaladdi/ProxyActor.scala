@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
 
 class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
 (d: FutureDependencies[_, Dependencies], create: Required => Props, dependencyError: Throwable => Any)
-  (implicit alignDeps: AlignReduce[Dependencies, Required]) extends Actor with Stash {
+  (implicit alignDeps: FindAligned[Dependencies, Required]) extends Actor with Stash {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
