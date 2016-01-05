@@ -11,9 +11,8 @@ import scala.reflect.ClassTag
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val dependencies: DepFutures)
-  (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues],
-    ec: ExecutionContext) {
+class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: => DepFutures)
+  (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues], ec: ExecutionContext) {
 
   import AlignReduceOps._
 
@@ -41,11 +40,11 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](val
       timeout: Timeout, tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
     import akka.pattern.ask
-    val d = toFutu.hsequence(dependencies.alignReduce[FutReq]).flatMap { req =>
+    def actorResponse = toFutu.hsequence(dependencies.alignReduce[FutReq]).flatMap { req =>
       actorDep.who ? actorDep.question(req)
     }.collect { case t: T => t }
 
-    new FutureDependencies(d :: dependencies)
+    new FutureDependencies(actorResponse :: dependencies)
   }
 
   def withFuture[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
