@@ -1,13 +1,11 @@
 package com.github.scaladdi
 
-import akka.actor.{ActorRef, Stash, Props, Actor}
+import akka.actor._
 import akka.pattern.pipe
 import shapeless.HList
 
 import scala.reflect.ClassTag
 
-/*class ProxyActor[Futures <: HList, Values <: HList, DepFutures <: HList, DepValues <: HList, AD <: HList, FAD <: HList, Responses <: HList, Failures <: HList]
-(d: ActorDependencies[Futures, Values, DepFutures, DepValues, AD, FAD, Responses, Failures]) extends Actor {*/
 class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
 (d: FutureDependencies[_, Dependencies], create: Required => Props, dependencyError: Throwable => Any)
   (implicit alignDeps: AlignReduce[Dependencies, Required]) extends Actor with Stash {
@@ -24,14 +22,17 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
   override def receive: Receive = {
     case deps: Required =>
       unstashAll()
-      context become work(context.actorOf(create(deps)))
+      val proxied = context.actorOf(create(deps))
+      context.watch(proxied)
+      context become work(proxied)
     case this.DependencyError(t) => context.parent ! dependencyError(t)
     case _ => stash()
   }
 
   private def work(proxied: ActorRef): Receive = {
+    case Terminated(`proxied`) => context.stop(self)
     case any => if (sender == proxied) {
-      context.parent ! any
+      context.parent.forward(any)
     } else {
       proxied.forward(any)
     }
