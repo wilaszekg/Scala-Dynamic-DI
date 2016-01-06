@@ -47,7 +47,7 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dep
     new FutureDependencies(actorResponse :: dependencies)
   }
 
-  def withFuture[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+  def withFuture[T](future: => Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
     new FutureDependencies(future :: dependencies)
   }
 
