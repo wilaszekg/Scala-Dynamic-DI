@@ -12,12 +12,12 @@ object FindAligned {
     override def apply(l: L): M = align(l)
   }
 
-  implicit def alignTail[H, TL <: HList, M <: HList](implicit ar: FindAligned[TL, M]) = new FindAligned[H :: TL, M] {
-    override def apply(l: H :: TL): M = ar(l.tail)
+  implicit def alignTail[H, TL <: HList, M <: HList](implicit findAligned: FindAligned[TL, M]) = new FindAligned[H :: TL, M] {
+    override def apply(l: H :: TL): M = findAligned(l.tail)
   }
 
-  implicit def fromTails[H, T1 <: HList, T2 <: HList](implicit ar: FindAligned[T1, T2]) = new FindAligned[H :: T1, H :: T2] {
-    override def apply(l: H :: T1): H :: T2 = l.head :: ar(l.tail)
+  implicit def fromTails[H, T1 <: HList, T2 <: HList](implicit findAligned: FindAligned[T1, T2]) = new FindAligned[H :: T1, H :: T2] {
+    override def apply(l: H :: T1): H :: T2 = l.head :: findAligned(l.tail)
   }
 
 }
