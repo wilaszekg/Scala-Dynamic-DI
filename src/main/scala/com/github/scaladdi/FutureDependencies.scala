@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: => DepFutures)
+class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: DepFutures)
   (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues], ec: ExecutionContext) {
 
   import FindAlignedOps._
