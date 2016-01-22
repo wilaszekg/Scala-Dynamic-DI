@@ -1,23 +1,18 @@
 package com.github.scaladdi
 
-import shapeless.ops.hlist.Align
-import shapeless.{::, HList}
+import shapeless.HList
+import shapeless.ops.hlist.RemoveAll
 
 trait FindAligned[L <: HList, M <: HList] extends (L => M) with Serializable {
   def apply(l: L): M
 }
 
 object FindAligned {
-  implicit def fromAlign[L <: HList, M <: HList](implicit align: Align[L, M]) = new FindAligned[L, M] {
-    override def apply(l: L): M = align(l)
-  }
 
-  implicit def alignTail[H, TL <: HList, M <: HList](implicit findAligned: FindAligned[TL, M]) = new FindAligned[H :: TL, M] {
-    override def apply(l: H :: TL): M = findAligned(l.tail)
-  }
-
-  implicit def fromTails[H, T1 <: HList, T2 <: HList](implicit findAligned: FindAligned[T1, T2]) = new FindAligned[H :: T1, H :: T2] {
-    override def apply(l: H :: T1): H :: T2 = l.head :: findAligned(l.tail)
+  implicit def wft[L <: HList, M <: HList, X <: HList]
+  (implicit removeAll: RemoveAll.Aux[L, M, (M, X)]): FindAligned[L, M] = new FindAligned[L, M] {
+    override def apply(l: L): M =
+      removeAll(l)._1
   }
 
 }
@@ -30,3 +25,4 @@ object FindAlignedOps {
   }
 
 }
+
