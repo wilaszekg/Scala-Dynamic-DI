@@ -9,7 +9,7 @@ trait FindAligned[L <: HList, M <: HList] extends (L => M) with Serializable {
 
 object FindAligned {
 
-  implicit def wft[L <: HList, M <: HList, X <: HList]
+  implicit def findAligned[L <: HList, M <: HList, X <: HList]
   (implicit removeAll: RemoveAll.Aux[L, M, (M, X)]): FindAligned[L, M] = new FindAligned[L, M] {
     override def apply(l: L): M =
       removeAll(l)._1
@@ -25,4 +25,3 @@ object FindAlignedOps {
   }
 
 }
-
