@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.scaladdi.FutureDependencies._
@@ -7,7 +7,7 @@ import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.implicitConversions
+import scala.language.{postfixOps, implicitConversions}
 
 class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike with ImplicitSender {
 
@@ -42,8 +42,6 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     }
   }
 
-  val improveDep: FunctionDependency[ImprovedBasket, Tuple1[Basket]] = FunctionDependency((basket: Basket) => ImprovedBasket(basket))
-
   case class AskForProducts(basket: ImprovedBasket)
 
   def actor(prods: Products) = Props(new PriceCalculator(prods))
@@ -55,7 +53,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       val props = deps.withFuture(findShop("Bakery"))
         .withVal(User("John"))
         .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
-        .requires(improveDep)
+        .requires(FunctionDependency((basket: Basket) => ImprovedBasket(basket)))
         .requires(ActorDep(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products])).props(actor _)
 
       val proxy = system.actorOf(props)
