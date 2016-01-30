@@ -50,8 +50,8 @@ val props = deps.withFuture(findShop(shopId))
   .withVal(user)
   .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
   .requires(FunctionDependency((basket: Basket) => ImprovedBasket(basket)))
-  .requires(ActorDep(basketKeeper.ref, products _, classOf[Products])).props(PriceCalculator.props)
+  .requires(ActorDependency(basketKeeper.ref, products _, classOf[Products])).props(PriceCalculator.props)
 ```
 
-You can declare the dependencies (`FutureDependency`, `FunctionDependency` or `ActorDep`) in one place and reuse them. Everything is completely type-safe. If you append a new dependency to be built, the library ensures that all required parameters are available in the scope. Under the hood it composes all dependencies as `Futures` and pass a final `Future` to a proxy actor. The proxy actor creates the destination actor once all dependencies are available. This way your actor can be very simple and requires only the parameters that it really uses.
+You can declare the dependencies (`FutureDependency`, `FunctionDependency` or `ActorDependency`) in one place and reuse them. Everything is completely type-safe. If you append a new dependency to be built, the library ensures that all required parameters are available in the scope. Under the hood it composes all dependencies as `Futures` and pass a final `Future` to a proxy actor. The proxy actor creates the destination actor once all dependencies are available. This way your actor can be very simple and requires only the parameters that it really uses.
 
