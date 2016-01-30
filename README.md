@@ -18,7 +18,7 @@ class ConfPriceCalculator(user: User, shopId: String,
     } self ! improveBasket(basket)
   }
 
-  override def receive: Actor.Receive = {
+  override def receive: Receive = {
     case improvedBasket: ImprovedBasket =>
       basketKeeper ! AskForProducts(improvedBasket)
       context become askedForProducts
