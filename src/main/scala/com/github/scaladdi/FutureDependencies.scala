@@ -1,15 +1,12 @@
 package com.github.scaladdi
 
 import akka.actor.Props
-import akka.util.Timeout
 import shapeless.ops.function.FnToProduct
 import shapeless.syntax.std.function._
-import shapeless.{Generic, ::, HList, HNil}
-
-import scala.reflect.ClassTag
-
+import shapeless.{::, Generic, HList, HNil}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 
 class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: DepFutures)
   (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues], ec: ExecutionContext) {
@@ -32,19 +29,6 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dep
       tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
 
     new FutureDependencies(toFutu.hsequence(dependencies.findAligned[FutReq]).flatMap(args => dependency.apply(genArgs from args)) :: dependencies)
-  }
-
-  def requires[T: ClassTag, Req <: HList, FutReq <: HList](actorDep: ActorDep[Req, T])
-    (implicit toFutu: IsHListOfFutures[FutReq, Req],
-      align: FindAligned[DepFutures, FutReq],
-      timeout: Timeout, tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
-
-    import akka.pattern.ask
-    def actorResponse = toFutu.hsequence(dependencies.findAligned[FutReq]).flatMap { req =>
-      actorDep.who ? actorDep.question(req)
-    }.collect { case t: T => t }
-
-    new FutureDependencies(actorResponse :: dependencies)
   }
 
   def withFuture[T](future: => Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
