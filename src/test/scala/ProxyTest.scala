@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.scaladdi.FutureDependencies._
@@ -42,8 +42,6 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     }
   }
 
-  val basketDep: FutureDependency[Basket, (User, Shop)] = FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop)))
-
   val improveDep: FunctionDependency[ImprovedBasket, Tuple1[Basket]] = FunctionDependency((basket: Basket) => ImprovedBasket(basket))
 
   case class AskForProducts(basket: ImprovedBasket)
@@ -58,7 +56,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       val basketKeeper = new TestProbe(system)
       val props = deps.withFuture(findShop("Bakery"))
         .withVal(User("John"))
-        .requires(basketDep)
+        .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
         .requires(improveDep)
         .requires(ActorDep(basketKeeper.ref, products _, classOf[Products])).props(actor _)
 
