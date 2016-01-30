@@ -46,8 +46,6 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   case class AskForProducts(basket: ImprovedBasket)
 
-  def products(basket: ImprovedBasket): Any = AskForProducts(basket)
-
   def actor(prods: Products) = Props(new PriceCalculator(prods))
 
   "Proxied actor" should {
@@ -58,7 +56,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
         .withVal(User("John"))
         .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
         .requires(improveDep)
-        .requires(ActorDep(basketKeeper.ref, products _, classOf[Products])).props(actor _)
+        .requires(ActorDep(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products])).props(actor _)
 
       val proxy = system.actorOf(props)
 

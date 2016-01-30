@@ -11,6 +11,6 @@ case class ActorDep[Question <: HList, R](who: ActorRef, question: Question => A
 }
 
 object ActorDep {
-  def apply[F, Question <: HList, R](who: ActorRef, question: F, c: Class[R])(implicit fnToProduct: FnToProduct.Aux[F, Question => Any]) =
+  def apply[F, Question <: HList, R, Q <: Any](who: ActorRef, question: F, c: Class[R])(implicit fnToProduct: FnToProduct.Aux[F, Question => Q]) =
     ActorDep[Question, R](who, question.toProduct)
 }
