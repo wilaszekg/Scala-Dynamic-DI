@@ -34,6 +34,7 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
       context become work(proxied)
 
     case DependencyError(t) =>
+      t.printStackTrace()
       failedDependencyTries += 1
       dependenciesRetriesMax match {
         case None => getDependencies()

@@ -51,7 +51,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   case class FindUser(name: String)
 
-  def actor(prods: Products) = Props(new PriceCalculator(prods))
+  def actor(prods: Products): Props = Props(new PriceCalculator(prods))
 
   val basketDependency = FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop)))
 
@@ -77,18 +77,28 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
     "retry executing dependencies and succeed" in {
       val proxyProps = new ProxyProps(actor _)
-      val userFindFailures = 2
-      val userFinder = system.actorOf(Props(new FailingUserFinder(userFindFailures)))
-      val props = proxyProps from FutureDependencies().withFuture(findShop("Bakery")).withVal("John")
-        .requires(ActorDependency(userFinder, (name: String) => FindUser(name), classOf[User]))
-        .requires(basketDependency)
-        .requires(improvedBasketDependency)
-        .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
+      val userFinder = failingUserFinder(2)
+      val props = proxyProps from failingDependencies(userFinder)
 
       val proxy = system.actorOf(props)
 
       checkBasketPrice(proxy)
     }
+
+    def failingUserFinder(failures: Int) =
+      ActorDependency(system.actorOf(Props(new FailingUserFinder(failures))),
+        (name: String) => FindUser(name),
+        classOf[User])
+
+    // must remember this will be called by name in proxy
+    def failingDependencies(userFinder: ActorDependency[Tuple1[String], User]) = {
+      FutureDependencies().withFuture(findShop("Bakery")).withVal("John")
+        .requires(userFinder)
+        .requires(basketDependency)
+        .requires(improvedBasketDependency)
+        .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
+    }
+
 
     def checkBasketPrice(proxy: ActorRef) = {
       basketKeeper.expectMsg(AskForProducts(ImprovedBasket(Basket(User("John"), Shop("Bakery")))))
