@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{ActorRef, Actor, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.scaladdi.{ActorDependency, FunctionDependency, FutureDependencies, FutureDependency}
@@ -7,6 +7,7 @@ import org.scalatest.WordSpecLike
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.{implicitConversions, postfixOps}
+import model._
 
 class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike with ImplicitSender {
 
@@ -14,25 +15,11 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   implicit val timeout = Timeout(3 seconds)
 
-  case class User(name: String)
-
-  case class Shop(name: String)
-
-  case class Basket(user: User, shop: Shop)
-
-  case class ImprovedBasket(basket: Basket)
-
-  case class Product(price: Int)
-
-  case class Products(products: List[Product])
-
   def findUser(name: String) = Future(User(name))
 
   def findShop(name: String) = Future(Shop(name))
 
   case object Calculate
-
-  case class Price(value: Int)
 
   class PriceCalculator(products: Products) extends Actor {
     override def receive: Receive = {
@@ -47,8 +34,9 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   "Proxied actor" should {
 
+    val basketKeeper = new TestProbe(system)
+
     "be started and answer" in {
-      val basketKeeper = new TestProbe(system)
       val props = FutureDependencies().withFuture(findShop("Bakery"))
         .withVal(User("John"))
         .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
@@ -57,6 +45,10 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
       val proxy = system.actorOf(props)
 
+      checkBasketPrice(proxy)
+    }
+
+    def checkBasketPrice(proxy: ActorRef) = {
       basketKeeper.expectMsg(AskForProducts(ImprovedBasket(Basket(User("John"), Shop("Bakery")))))
       basketKeeper.reply(Products(List(Product(5), Product(10))))
 
