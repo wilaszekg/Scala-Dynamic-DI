@@ -1,7 +1,7 @@
 import akka.actor.{ActorRef, Actor, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import com.github.scaladdi.{ActorDependency, FunctionDependency, FutureDependencies, FutureDependency}
+import com.github.scaladdi._
 import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future
@@ -37,11 +37,12 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     val basketKeeper = new TestProbe(system)
 
     "be started and answer" in {
-      val props = FutureDependencies().withFuture(findShop("Bakery"))
+      val proxyProps = new ProxyProps(actor _)
+      val props = proxyProps from FutureDependencies().withFuture(findShop("Bakery"))
         .withVal(User("John"))
         .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
         .requires(FunctionDependency((basket: Basket) => ImprovedBasket(basket)))
-        .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products])).props(actor _)
+        .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
 
       val proxy = system.actorOf(props)
 

@@ -1,8 +1,5 @@
 package com.github.scaladdi
 
-import akka.actor.Props
-import shapeless.ops.function.FnToProduct
-import shapeless.syntax.std.function._
 import shapeless.{::, Generic, HList, HNil}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,12 +38,6 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dep
 
   def result: Future[DepValues] = toDepFuture.hsequence(dependencies)
 
-  def props[F, Req <: HList : ClassTag](fun: F, dependencyError: Throwable => Any = defaultError)
-    (implicit funOfDeps: FnToProduct.Aux[F, Req => Props],
-      align: FindAligned[DepValues, Req]) =
-    Props(new ProxyActor(this, fun.toProduct, dependencyError))
-
-  private def defaultError(t: Throwable) = DynamicConfigurationFailure(t)
 }
 
 case class DynamicConfigurationFailure(t: Throwable)
