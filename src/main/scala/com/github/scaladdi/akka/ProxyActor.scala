@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
 (d: => FutureDependencies[_, Dependencies],
   create: Required => Props,
-  dependenciesRetriesMax: Option[Int],
+  dependenciesTriesMax: Option[Int],
   dependencyError: Throwable => Any)
   (implicit alignDeps: FindAligned[Dependencies, Required]) extends Actor with Stash {
 
@@ -34,9 +34,8 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
       context become work(proxied)
 
     case DependencyError(t) =>
-      t.printStackTrace()
       failedDependencyTries += 1
-      dependenciesRetriesMax match {
+      dependenciesTriesMax match {
         case None => getDependencies()
         case Some(max) if max > failedDependencyTries => getDependencies()
         case _ => context.parent ! dependencyError(t)

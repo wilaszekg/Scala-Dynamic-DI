@@ -1,4 +1,4 @@
-import akka.actor._
+import _root_.akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.scaladdi._
@@ -34,7 +34,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
   class FailingUserFinder(var failures: Int) extends Actor {
     override def receive: Receive = {
       case FindUser(name) => failures -= 1
-        if (failures <= 0) sender ! User(name)
+        if (failures < 0) sender ! User(name)
     }
   }
 
@@ -83,6 +83,24 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       val proxy = system.actorOf(props)
 
       checkBasketPrice(proxy)
+    }
+
+    "send failure" in {
+      class ParentExecutor extends Actor {
+        var testReceiver: ActorRef = _
+        override def receive: Receive = {
+          case "start" => testReceiver = sender
+            val proxyProps = new ProxyProps(actor _, dependenciesTriesMax = Some(3))
+            val userFinder = failingUserFinder(3)
+            val props = proxyProps from failingDependencies(userFinder)
+            context.actorOf(props)
+
+          case x => testReceiver ! x
+        }
+      }
+
+      system.actorOf(Props(new ParentExecutor)) ! "start"
+      expectMsgClass(classOf[DynamicConfigurationFailure])
     }
 
     def failingUserFinder(failures: Int) =
