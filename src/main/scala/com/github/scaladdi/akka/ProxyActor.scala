@@ -8,17 +8,23 @@ import shapeless.HList
 import scala.reflect.ClassTag
 
 class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
-(d: => FutureDependencies[_, Dependencies], create: Required => Props, dependencyError: Throwable => Any)
+(d: => FutureDependencies[_, Dependencies],
+  create: Required => Props,
+  dependenciesRetriesMax: Option[Int],
+  dependencyError: Throwable => Any)
   (implicit alignDeps: FindAligned[Dependencies, Required]) extends Actor with Stash {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private case class DependencyError(t: Throwable)
+  private var failedDependencyTries = 0
 
   override def preStart(): Unit = {
     super.preStart()
-    d.result.map(alignDeps).recover { case t => DependencyError(t) } pipeTo self
+    getDependencies()
   }
+
+  private def getDependencies() =
+    d.result.map(alignDeps).recover { case t => DependencyError(t) } pipeTo self
 
   override def receive: Receive = {
     case deps: Required =>
@@ -26,7 +32,14 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
       val proxied = context.actorOf(create(deps))
       context.watch(proxied)
       context become work(proxied)
-    case this.DependencyError(t) => context.parent ! dependencyError(t)
+
+    case DependencyError(t) =>
+      failedDependencyTries += 1
+      dependenciesRetriesMax match {
+        case None => getDependencies()
+        case Some(max) if max > failedDependencyTries => getDependencies()
+        case _ => context.parent ! dependencyError(t)
+      }
     case _ => stash()
   }
 
@@ -38,4 +51,7 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
       proxied.forward(any)
     }
   }
+
+  private case class DependencyError(t: Throwable)
+
 }

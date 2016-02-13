@@ -8,11 +8,13 @@ import shapeless.syntax.std.function._
 
 import scala.reflect.ClassTag
 
-class ProxyProps[F, Req <: HList : ClassTag](fun: F, dependencyError: Throwable => Any = ProxyProps.defaultError)
+class ProxyProps[F, Req <: HList : ClassTag](fun: F,
+  dependenciesRetriesMax: Option[Int] = None,
+  dependencyError: Throwable => Any = ProxyProps.defaultError)
   (implicit funOfDeps: FnToProduct.Aux[F, Req => Props]) {
 
   def from[FD <: HList, D <: HList](dependencies: => FutureDependencies[FD, D])(implicit align: FindAligned[D, Req]): Props =
-    Props(new ProxyActor(dependencies, fun.toProduct, dependencyError))
+    Props(new ProxyActor(dependencies, fun.toProduct, dependenciesRetriesMax, dependencyError))
 
 }
 

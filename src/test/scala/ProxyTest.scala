@@ -15,7 +15,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private val timeoutDuration: FiniteDuration = 3 seconds
+  private val timeoutDuration: FiniteDuration = 100 millis
   implicit val timeout = Timeout(timeoutDuration)
 
   def findUser(name: String) = Future(User(name))
@@ -66,6 +66,21 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       val proxyProps = new ProxyProps(actor _)
       val props = proxyProps from FutureDependencies().withFuture(findShop("Bakery"))
         .withVal(User("John"))
+        .requires(basketDependency)
+        .requires(improvedBasketDependency)
+        .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
+
+      val proxy = system.actorOf(props)
+
+      checkBasketPrice(proxy)
+    }
+
+    "retry executing dependencies and succeed" in {
+      val proxyProps = new ProxyProps(actor _)
+      val userFindFailures = 2
+      val userFinder = system.actorOf(Props(new FailingUserFinder(userFindFailures)))
+      val props = proxyProps from FutureDependencies().withFuture(findShop("Bakery")).withVal("John")
+        .requires(ActorDependency(userFinder, (name: String) => FindUser(name), classOf[User]))
         .requires(basketDependency)
         .requires(improvedBasketDependency)
         .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
