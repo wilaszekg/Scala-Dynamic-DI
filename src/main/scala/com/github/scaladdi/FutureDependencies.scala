@@ -53,7 +53,7 @@ case class DynamicConfigurationFailure(t: Throwable)
 
 object FutureDependencies {
 
-  def deps(implicit ec: ExecutionContext): FutureDependencies[HNil, HNil] = {
+  def apply()(implicit ec: ExecutionContext): FutureDependencies[HNil, HNil] = {
     new FutureDependencies(HNil)
   }
 }

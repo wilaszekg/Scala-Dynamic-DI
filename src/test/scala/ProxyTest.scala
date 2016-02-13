@@ -1,13 +1,12 @@
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import com.github.scaladdi.FutureDependencies._
-import com.github.scaladdi.{ActorDependency, FunctionDependency, FutureDependency}
+import com.github.scaladdi.{ActorDependency, FunctionDependency, FutureDependencies, FutureDependency}
 import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.{postfixOps, implicitConversions}
+import scala.language.{implicitConversions, postfixOps}
 
 class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike with ImplicitSender {
 
@@ -50,7 +49,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
     "be started and answer" in {
       val basketKeeper = new TestProbe(system)
-      val props = deps.withFuture(findShop("Bakery"))
+      val props = FutureDependencies().withFuture(findShop("Bakery"))
         .withVal(User("John"))
         .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
         .requires(FunctionDependency((basket: Basket) => ImprovedBasket(basket)))
