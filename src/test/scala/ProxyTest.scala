@@ -1,20 +1,22 @@
-import akka.actor.{ActorRef, Actor, ActorSystem, Props}
+import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.scaladdi._
-import com.github.scaladdi.akka.{ProxyProps, ActorDependency}
-import org.scalatest.WordSpecLike
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.language.{implicitConversions, postfixOps}
+import com.github.scaladdi.akka.{ActorDependency, ProxyProps}
 import model._
+import org.scalatest.{Matchers, WordSpecLike}
+import shapeless.HNil
 
-class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike with ImplicitSender {
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.{implicitConversions, postfixOps}
+
+class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike with ImplicitSender with Matchers {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  implicit val timeout = Timeout(3 seconds)
+  private val timeoutDuration: FiniteDuration = 3 seconds
+  implicit val timeout = Timeout(timeoutDuration)
 
   def findUser(name: String) = Future(User(name))
 
@@ -29,20 +31,43 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     }
   }
 
-  case class AskForProducts(basket: ImprovedBasket)
+  class FailingUserFinder(var failures: Int) extends Actor {
+    override def receive: Receive = {
+      case FindUser(name) => failures -= 1
+        if (failures <= 0) sender ! User(name)
+    }
+  }
+
+  class OneResponseUserFinder extends Actor {
+    override def receive: Receive = {
+      case FindUser(name) => sender ! User(name)
+        context become idle
+    }
+
+    private def idle: Receive = {
+      case _ =>
+    }
+  }
+
+  case class FindUser(name: String)
 
   def actor(prods: Products) = Props(new PriceCalculator(prods))
+
+  val basketDependency = FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop)))
+
+  val improvedBasketDependency = FunctionDependency((basket: Basket) => ImprovedBasket(basket))
 
   "Proxied actor" should {
 
     val basketKeeper = new TestProbe(system)
+    case class AskForProducts(basket: ImprovedBasket)
 
     "be started and answer" in {
       val proxyProps = new ProxyProps(actor _)
       val props = proxyProps from FutureDependencies().withFuture(findShop("Bakery"))
         .withVal(User("John"))
-        .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
-        .requires(FunctionDependency((basket: Basket) => ImprovedBasket(basket)))
+        .requires(basketDependency)
+        .requires(improvedBasketDependency)
         .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
 
       val proxy = system.actorOf(props)
@@ -56,6 +81,21 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
       proxy ! Calculate
       expectMsg(Price(15))
+    }
+  }
+
+  "Future Dependencies" should {
+    "call base future only once" in {
+      val userFinder = system.actorOf(Props(new OneResponseUserFinder))
+      val dependencies = FutureDependencies().withFuture(findShop("Bakery")).withVal("John")
+        .requires(ActorDependency(userFinder, (name: String) => FindUser(name), classOf[User]))
+        .requires(basketDependency)
+        .requires(improvedBasketDependency).result
+
+      val shop: Shop = Shop("Bakery")
+      val user: User = User("John")
+      val basket: Basket = Basket(user, shop)
+      Await.result(dependencies, timeoutDuration) shouldBe (ImprovedBasket(basket) :: basket :: user :: "John" :: shop :: HNil)
     }
   }
 }
