@@ -1,6 +1,7 @@
-package com.github.scaladdi
+package com.github.scaladdi.akka
 
 import akka.actor.Props
+import com.github.scaladdi.{DynamicConfigurationFailure, FindAligned, FutureDependencies}
 import shapeless.HList
 import shapeless.ops.function.FnToProduct
 import shapeless.syntax.std.function._

@@ -2,6 +2,7 @@ import akka.actor.{ActorRef, Actor, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.scaladdi._
+import com.github.scaladdi.akka.{ProxyProps, ActorDependency}
 import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future

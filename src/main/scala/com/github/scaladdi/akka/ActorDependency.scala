@@ -1,7 +1,9 @@
-package com.github.scaladdi
+package com.github.scaladdi.akka
 
 import akka.actor.ActorRef
+import akka.pattern.ask
 import akka.util.Timeout
+import com.github.scaladdi.FutureDependency
 import shapeless._
 import shapeless.ops.function.FnToProduct
 import shapeless.ops.hlist.Tupler
@@ -16,7 +18,6 @@ case class ActorDependency[Question, R: ClassTag](who: ActorRef, question: Quest
   type Response = R
 
   override def apply(args: Question): Future[R] = {
-    import akka.pattern.ask
     who ? question(args) collect { case r: R => r }
   }
 }
