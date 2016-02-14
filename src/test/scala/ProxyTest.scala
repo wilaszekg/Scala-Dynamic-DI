@@ -31,8 +31,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     override def receive: Receive = {
       case Calculate =>
         sender ! Price(products.products.foldLeft(0)(_ + _.price))
-      case Kill => println("...... killing")
-        throw new IllegalStateException()
+      case Kill => throw new IllegalStateException()
     }
   }
 
@@ -72,6 +71,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       val props = proxyProps from workingDependencies
       val proxy = system.actorOf(props)
 
+      basketKeeperReply()
       checkBasketPrice(proxy)
     }
 
@@ -82,6 +82,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
       val proxy = system.actorOf(props)
 
+      basketKeeperReply()
       checkBasketPrice(proxy)
     }
 
@@ -117,17 +118,24 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     "terminate proxy" in {
       val proxyProps = new ProxyProps(actor _, supervisionStrategy = alwayStopStrategy, reConfigureAfterTerminated = false)
       val props = proxyProps from workingDependencies
-      val proxy = system.actorOf(props)
+      val proxy = watch(system.actorOf(props))
       basketKeeperReply()
 
-      watch(proxy)
       proxy ! Kill
 
       expectTerminated(proxy)
     }
 
-    "re-configure proxied actor" ignore {
+    "re-configure proxied actor" in {
+      val proxyProps = new ProxyProps(actor _, supervisionStrategy = alwayStopStrategy, reConfigureAfterTerminated = true)
+      val props = proxyProps from workingDependencies
+      val proxy = watch(system.actorOf(props))
+      basketKeeperReply()
 
+      proxy ! Kill
+
+      basketKeeperReply()
+      checkBasketPrice(proxy)
     }
 
     def workingDependencies = FutureDependencies().withFuture(findShop("Bakery"))
@@ -153,8 +161,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
     def alwayStopStrategy = {
       def defaultDecider: Decider = {
-        case x => println(s"......... $x")
-          Stop
+        case x => Stop
       }
       OneForOneStrategy()(defaultDecider)
     }
@@ -165,8 +172,6 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     }
 
     def checkBasketPrice(proxy: ActorRef) = {
-      basketKeeperReply
-
       proxy ! Calculate
       expectMsg(Price(15))
     }

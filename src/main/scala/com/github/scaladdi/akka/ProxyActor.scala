@@ -12,6 +12,7 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
   create: Required => Props,
   dependenciesTriesMax: Option[Int],
   supervision: SupervisorStrategy,
+  reConfigureAfterTerminated: Boolean,
   dependencyError: Throwable => Any)
   (implicit alignDeps: FindAligned[Dependencies, Required]) extends Actor with Stash {
 
@@ -24,13 +25,15 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
 
   override def preStart(): Unit = {
     super.preStart()
-    getDependencies()
+    runDependencies()
   }
 
-  private def getDependencies() =
+  private def runDependencies() =
     d.result.map(alignDeps).recover { case t => DependencyError(t) } pipeTo self
 
-  override def receive: Receive = {
+  override def receive = configure
+
+  private def configure: Receive = {
     case deps: Required =>
       unstashAll()
       val proxied = context.actorOf(create(deps))
@@ -40,22 +43,33 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
     case DependencyError(t) =>
       failedDependencyTries += 1
       dependenciesTriesMax match {
-        case None => getDependencies()
-        case Some(max) if max > failedDependencyTries => getDependencies()
+        case None => runDependencies()
+        case Some(max) if max > failedDependencyTries => runDependencies()
         case _ =>
           context.parent ! dependencyError(t)
           context stop self
       }
+
     case _ => stash()
   }
 
   private def work(proxied: ActorRef): Receive = {
-    case Terminated(`proxied`) => context.stop(self)
-    case any => if (sender == proxied) {
-      context.parent.forward(any)
-    } else {
-      proxied.forward(any)
-    }
+    case Terminated(`proxied`) =>
+      if (reConfigureAfterTerminated) reConfigure()
+      else context.stop(self)
+
+    case any =>
+      if (sender == proxied) {
+        context.parent.forward(any)
+      } else {
+        proxied.forward(any)
+      }
+  }
+
+  private def reConfigure() = {
+    context become configure
+    failedDependencyTries = 0
+    runDependencies()
   }
 
   private case class DependencyError(t: Throwable)

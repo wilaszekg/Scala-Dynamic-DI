@@ -16,7 +16,7 @@ class ProxyProps[F, Req <: HList : ClassTag](fun: F,
   (implicit funOfDeps: FnToProduct.Aux[F, Req => Props]) {
 
   def from[FD <: HList, D <: HList](dependencies: => FutureDependencies[FD, D])(implicit align: FindAligned[D, Req]): Props =
-    Props(new ProxyActor(dependencies, fun.toProduct, dependenciesTriesMax, supervisionStrategy, dependencyError))
+    Props(new ProxyActor(dependencies, fun.toProduct, dependenciesTriesMax, supervisionStrategy, reConfigureAfterTerminated, dependencyError))
 
 }
 
