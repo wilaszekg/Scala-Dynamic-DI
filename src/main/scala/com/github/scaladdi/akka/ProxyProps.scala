@@ -1,6 +1,6 @@
 package com.github.scaladdi.akka
 
-import akka.actor.Props
+import akka.actor.{SupervisorStrategy, Props}
 import com.github.scaladdi.{DynamicConfigurationFailure, FindAligned, FutureDependencies}
 import shapeless.HList
 import shapeless.ops.function.FnToProduct
@@ -10,11 +10,13 @@ import scala.reflect.ClassTag
 
 class ProxyProps[F, Req <: HList : ClassTag](fun: F,
   dependenciesTriesMax: Option[Int] = None,
+  reConfigureAfterTerminated: Boolean = true,
+  supervisionStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy,
   dependencyError: Throwable => Any = ProxyProps.defaultError)
   (implicit funOfDeps: FnToProduct.Aux[F, Req => Props]) {
 
   def from[FD <: HList, D <: HList](dependencies: => FutureDependencies[FD, D])(implicit align: FindAligned[D, Req]): Props =
-    Props(new ProxyActor(dependencies, fun.toProduct, dependenciesTriesMax, dependencyError))
+    Props(new ProxyActor(dependencies, fun.toProduct, dependenciesTriesMax, supervisionStrategy, dependencyError))
 
 }
 

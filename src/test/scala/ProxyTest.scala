@@ -1,3 +1,4 @@
+import _root_.akka.actor.SupervisorStrategy.{Stop, Decider}
 import _root_.akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
@@ -23,11 +24,14 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
   def findShop(name: String) = Future(Shop(name))
 
   case object Calculate
+  case object Kill
 
   class PriceCalculator(products: Products) extends Actor {
     override def receive: Receive = {
       case Calculate =>
         sender ! Price(products.products.foldLeft(0)(_ + _.price))
+      case Kill => println("...... killing")
+        throw new IllegalStateException()
     }
   }
 
@@ -64,12 +68,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
     "be started and answer" in {
       val proxyProps = new ProxyProps(actor _)
-      val props = proxyProps from FutureDependencies().withFuture(findShop("Bakery"))
-        .withVal(User("John"))
-        .requires(basketDependency)
-        .requires(improvedBasketDependency)
-        .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
-
+      val props = proxyProps from workingDependencies
       val proxy = system.actorOf(props)
 
       checkBasketPrice(proxy)
@@ -103,6 +102,29 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       expectMsgClass(classOf[DynamicConfigurationFailure])
     }
 
+    "terminate proxy" in {
+      val proxyProps = new ProxyProps(actor _, supervisionStrategy = alwayStopStrategy, reConfigureAfterTerminated = false)
+      val props = proxyProps from workingDependencies
+      val proxy = system.actorOf(props)
+      basketKeeperReply()
+
+      watch(proxy)
+      proxy ! Kill
+
+      expectTerminated(proxy)
+    }
+
+    "re-configure proxied actor" ignore {
+
+    }
+
+    def workingDependencies = FutureDependencies().withFuture(findShop("Bakery"))
+      .withVal(User("John"))
+      .requires(basketDependency)
+      .requires(improvedBasketDependency)
+      .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
+
+
     def failingUserFinder(failures: Int) =
       ActorDependency(system.actorOf(Props(new FailingUserFinder(failures))),
         (name: String) => FindUser(name),
@@ -117,10 +139,21 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
         .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
     }
 
+    def alwayStopStrategy = {
+      def defaultDecider: Decider = {
+        case x => println(s"......... $x")
+          Stop
+      }
+      OneForOneStrategy()(defaultDecider)
+    }
 
-    def checkBasketPrice(proxy: ActorRef) = {
+    def basketKeeperReply(): Unit = {
       basketKeeper.expectMsg(AskForProducts(ImprovedBasket(Basket(User("John"), Shop("Bakery")))))
       basketKeeper.reply(Products(List(Product(5), Product(10))))
+    }
+
+    def checkBasketPrice(proxy: ActorRef) = {
+      basketKeeperReply
 
       proxy ! Calculate
       expectMsg(Price(15))

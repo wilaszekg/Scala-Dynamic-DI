@@ -11,10 +11,14 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
 (d: => FutureDependencies[_, Dependencies],
   create: Required => Props,
   dependenciesTriesMax: Option[Int],
+  supervision: SupervisorStrategy,
   dependencyError: Throwable => Any)
   (implicit alignDeps: FindAligned[Dependencies, Required]) extends Actor with Stash {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+
+
+  override def supervisorStrategy: SupervisorStrategy = supervision
 
   private var failedDependencyTries = 0
 
