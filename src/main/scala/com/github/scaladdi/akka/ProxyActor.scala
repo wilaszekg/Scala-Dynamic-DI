@@ -42,7 +42,9 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
       dependenciesTriesMax match {
         case None => getDependencies()
         case Some(max) if max > failedDependencyTries => getDependencies()
-        case _ => context.parent ! dependencyError(t)
+        case _ =>
+          context.parent ! dependencyError(t)
+          context stop self
       }
     case _ => stash()
   }

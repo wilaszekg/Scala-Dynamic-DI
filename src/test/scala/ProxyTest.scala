@@ -24,6 +24,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
   def findShop(name: String) = Future(Shop(name))
 
   case object Calculate
+
   case object Kill
 
   class PriceCalculator(products: Products) extends Actor {
@@ -87,6 +88,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     "send failure" in {
       class ParentExecutor extends Actor {
         var testReceiver: ActorRef = _
+
         override def receive: Receive = {
           case "start" => testReceiver = sender
             val proxyProps = new ProxyProps(actor _, dependenciesTriesMax = Some(3))
@@ -100,6 +102,16 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
       system.actorOf(Props(new ParentExecutor)) ! "start"
       expectMsgClass(classOf[DynamicConfigurationFailure])
+    }
+
+    "stop after configuration failure" in {
+      val proxyProps = new ProxyProps(actor _, dependenciesTriesMax = Some(1))
+      val userFinder = failingUserFinder(1)
+      val props = proxyProps from failingDependencies(userFinder)
+
+      val proxy = watch(system.actorOf(props))
+
+      expectTerminated(proxy)
     }
 
     "terminate proxy" in {
