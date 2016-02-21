@@ -28,7 +28,7 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dep
     new FutureDependencies(toFutu.hsequence(dependencies.findAligned[FutReq]).flatMap(args => dependency.apply(genArgs from args)) :: dependencies)
   }
 
-  def withFuture[T](future: => Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
+  def withFuture[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): FutureDependencies[Future[T] :: DepFutures, T :: DepValues] = {
     new FutureDependencies(future :: dependencies)
   }
 
