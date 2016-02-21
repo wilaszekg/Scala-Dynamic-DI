@@ -10,7 +10,7 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dep
 
   import FindAlignedOps._
 
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[T, Args])
+  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[Args, T])
     (implicit genArgs: Generic.Aux[Args, Req],
       toFutu: IsHListOfFutures[FutReq, Req],
       align: FindAligned[DepFutures, FutReq],

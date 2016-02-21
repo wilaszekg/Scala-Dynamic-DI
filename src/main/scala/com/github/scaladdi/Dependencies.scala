@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
 class Dependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: => FutureDependencies[DepFutures, DepValues])
   (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues], ec: ExecutionContext) {
 
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[T, Args])
+  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[Args, T])
     (implicit genArgs: Generic.Aux[Args, Req],
       toFutu: IsHListOfFutures[FutReq, Req],
       align: FindAligned[DepFutures, FutReq],
