@@ -19,7 +19,7 @@ class FutureDependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dep
     new FutureDependencies(toFutu.hsequence(dependencies.findAligned[FutReq]).map(args => dependency.apply(genArgs from args)) :: dependencies)
   }
 
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[T, Args])
+  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[Args, T])
     (implicit genArgs: Generic.Aux[Args, Req],
       toFutu: IsHListOfFutures[FutReq, Req],
       align: FindAligned[DepFutures, FutReq],

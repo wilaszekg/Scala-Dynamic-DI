@@ -14,7 +14,7 @@ import scala.reflect.ClassTag
 
 
 case class ActorDependency[Question, R: ClassTag](who: ActorRef, question: Question => Any)
-  (implicit timeout: Timeout, ec: ExecutionContext) extends FutureDependency[R, Question] {
+  (implicit timeout: Timeout, ec: ExecutionContext) extends FutureDependency[Question, R] {
   type Response = R
 
   override def apply(args: Question): Future[R] = {

@@ -17,7 +17,7 @@ class Dependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependenc
     new Dependencies(dependencies.requires(dependency))
   }
 
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[T, Args])
+  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[Args, T])
     (implicit genArgs: Generic.Aux[Args, Req],
       toFutu: IsHListOfFutures[FutReq, Req],
       align: FindAligned[DepFutures, FutReq],
