@@ -7,7 +7,7 @@ import shapeless.HList
 
 import scala.reflect.ClassTag
 
-class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: => Dependencies[_, Deps],
+class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_, Deps],
   create: Required => Props,
   dependenciesTriesMax: Option[Int],
   supervision: SupervisorStrategy,
