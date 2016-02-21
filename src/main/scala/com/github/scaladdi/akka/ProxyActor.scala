@@ -2,19 +2,18 @@ package com.github.scaladdi.akka
 
 import akka.actor._
 import akka.pattern.pipe
-import com.github.scaladdi.{FindAligned, FutureDependencies}
+import com.github.scaladdi.{FindAligned, Dependencies}
 import shapeless.HList
 
 import scala.reflect.ClassTag
 
-class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
-(d: => FutureDependencies[_, Dependencies],
+class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: => Dependencies[_, Deps],
   create: Required => Props,
   dependenciesTriesMax: Option[Int],
   supervision: SupervisorStrategy,
   reConfigureAfterTerminated: Boolean,
   dependencyError: Throwable => Any)
-  (implicit alignDeps: FindAligned[Dependencies, Required]) extends Actor with Stash {
+  (implicit alignDeps: FindAligned[Deps, Required]) extends Actor with Stash {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -29,7 +28,7 @@ class ProxyActor[Dependencies <: HList, Required <: HList : ClassTag]
   }
 
   private def runDependencies() =
-    d.result.map(alignDeps).recover { case t => DependencyError(t) } pipeTo self
+    d.run.result.map(alignDeps).recover { case t => DependencyError(t) } pipeTo self
 
   override def receive = configure
 

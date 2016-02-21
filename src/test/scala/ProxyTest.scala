@@ -66,6 +66,12 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     val basketKeeper = new TestProbe(system)
     case class AskForProducts(basket: ImprovedBasket)
 
+    val workingDependencies = Dependencies().withFuture(findShop("Bakery"))
+      .withVal(User("John"))
+      .requires(basketDependency)
+      .requires(improvedBasketDependency)
+      .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
+
     "be started and answer" in {
       val proxyProps = new ProxyProps(actor _)
       val props = proxyProps from workingDependencies
@@ -78,7 +84,8 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     "retry executing dependencies and succeed" in {
       val proxyProps = new ProxyProps(actor _)
       val userFinder = failingUserFinder(2)
-      val props = proxyProps from failingDependencies(userFinder)
+      val d = failingDependencies(userFinder)
+      val props = proxyProps from d
 
       val proxy = system.actorOf(props)
 
@@ -94,7 +101,8 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
           case "start" => testReceiver = sender
             val proxyProps = new ProxyProps(actor _, dependenciesTriesMax = Some(3))
             val userFinder = failingUserFinder(3)
-            val props = proxyProps from failingDependencies(userFinder)
+            val d = failingDependencies(userFinder)
+            val props = proxyProps from d
             context.actorOf(props)
 
           case x => testReceiver ! x
@@ -108,7 +116,8 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
     "stop after configuration failure" in {
       val proxyProps = new ProxyProps(actor _, dependenciesTriesMax = Some(1))
       val userFinder = failingUserFinder(1)
-      val props = proxyProps from failingDependencies(userFinder)
+      val d = failingDependencies(userFinder)
+      val props = proxyProps from d
 
       val proxy = watch(system.actorOf(props))
 
@@ -138,13 +147,6 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       checkBasketPrice(proxy)
     }
 
-    def workingDependencies = FutureDependencies().withFuture(findShop("Bakery"))
-      .withVal(User("John"))
-      .requires(basketDependency)
-      .requires(improvedBasketDependency)
-      .requires(ActorDependency(basketKeeper.ref, (b: ImprovedBasket) => AskForProducts(b), classOf[Products]))
-
-
     def failingUserFinder(failures: Int) =
       ActorDependency(system.actorOf(Props(new FailingUserFinder(failures))),
         (name: String) => FindUser(name),
@@ -152,7 +154,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
     // must remember this will be called by name in proxy
     def failingDependencies(userFinder: ActorDependency[Tuple1[String], User]) = {
-      FutureDependencies().withFuture(findShop("Bakery")).withVal("John")
+      Dependencies().withFuture(findShop("Bakery")).withVal("John")
         .requires(userFinder)
         .requires(basketDependency)
         .requires(improvedBasketDependency)
@@ -180,10 +182,10 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
   "Future Dependencies" should {
     "call base future only once" in {
       val userFinder = system.actorOf(Props(new OneResponseUserFinder))
-      val dependencies = FutureDependencies().withFuture(findShop("Bakery")).withVal("John")
+      val dependencies = Dependencies().withFuture(findShop("Bakery")).withVal("John")
         .requires(ActorDependency(userFinder, (name: String) => FindUser(name), classOf[User]))
         .requires(basketDependency)
-        .requires(improvedBasketDependency).result
+        .requires(improvedBasketDependency).run.result
 
       val shop: Shop = Shop("Bakery")
       val user: User = User("John")
