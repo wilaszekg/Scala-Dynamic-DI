@@ -11,7 +11,7 @@ licenses := Seq("Apache License, ASL Version 2.0" -> url("http://www.apache.org/
 val AkkaVersion: String = "2.3.11"
 
 libraryDependencies += "com.chuusai" %% "shapeless" % "2.2.5"
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion % "provided"
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % "test"

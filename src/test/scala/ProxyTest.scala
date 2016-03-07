@@ -1,5 +1,5 @@
-import _root_.akka.actor.SupervisorStrategy.{Decider, Stop}
-import _root_.akka.actor._
+import akka.actor.SupervisorStrategy.{Decider, Stop}
+import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.wilaszekg.scaladdi.akka.{ActorDependency, ProxyProps}
