@@ -1,4 +1,4 @@
-package com.github.scaladdi
+package com.github.wilaszekg.scaladdi
 
 import shapeless.ops.hlist.Tupler
 import shapeless.{HList, Generic}

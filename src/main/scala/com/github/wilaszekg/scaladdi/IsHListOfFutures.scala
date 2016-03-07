@@ -1,4 +1,5 @@
-package com.github.scaladdi
+package com.github.wilaszekg.scaladdi
+
 import shapeless._
 
 import scala.concurrent.{ExecutionContext, Future}

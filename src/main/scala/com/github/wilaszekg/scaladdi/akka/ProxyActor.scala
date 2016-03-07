@@ -1,8 +1,8 @@
-package com.github.scaladdi.akka
+package com.github.wilaszekg.scaladdi.akka
 
 import akka.actor._
 import akka.pattern.pipe
-import com.github.scaladdi.{FindAligned, Dependencies}
+import com.github.wilaszekg.scaladdi.{Dependencies, FindAligned}
 import shapeless.HList
 
 import scala.reflect.ClassTag

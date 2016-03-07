@@ -1,9 +1,9 @@
-package com.github.scaladdi.akka
+package com.github.wilaszekg.scaladdi.akka
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import com.github.scaladdi.FutureDependency
+import com.github.wilaszekg.scaladdi.FutureDependency
 import shapeless._
 import shapeless.ops.function.FnToProduct
 import shapeless.ops.hlist.Tupler

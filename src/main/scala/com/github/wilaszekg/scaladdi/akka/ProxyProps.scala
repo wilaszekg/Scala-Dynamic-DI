@@ -1,7 +1,7 @@
-package com.github.scaladdi.akka
+package com.github.wilaszekg.scaladdi.akka
 
-import akka.actor.{SupervisorStrategy, Props}
-import com.github.scaladdi.{Dependencies, DynamicConfigurationFailure, FindAligned, Dependencies$}
+import akka.actor.{Props, SupervisorStrategy}
+import com.github.wilaszekg.scaladdi.{Dependencies, DynamicConfigurationFailure, FindAligned}
 import shapeless.HList
 import shapeless.ops.function.FnToProduct
 import shapeless.syntax.std.function._

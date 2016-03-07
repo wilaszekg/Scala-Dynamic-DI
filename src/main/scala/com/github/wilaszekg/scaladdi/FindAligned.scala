@@ -1,4 +1,4 @@
-package com.github.scaladdi
+package com.github.wilaszekg.scaladdi
 
 import shapeless.HList
 import shapeless.ops.hlist.RemoveAll

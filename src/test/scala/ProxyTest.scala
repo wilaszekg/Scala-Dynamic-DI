@@ -1,9 +1,9 @@
-import _root_.akka.actor.SupervisorStrategy.{Stop, Decider}
+import _root_.akka.actor.SupervisorStrategy.{Decider, Stop}
 import _root_.akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import com.github.scaladdi._
-import com.github.scaladdi.akka.{ActorDependency, ProxyProps}
+import com.github.wilaszekg.scaladdi.akka.{ActorDependency, ProxyProps}
+import com.github.wilaszekg.scaladdi.{Dependencies, DynamicConfigurationFailure, FunctionDependency, FutureDependency}
 import model._
 import org.scalatest.{Matchers, WordSpecLike}
 import shapeless.HNil
