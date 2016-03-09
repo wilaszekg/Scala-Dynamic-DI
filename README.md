@@ -46,7 +46,7 @@ Looks much simpler. But how to achieve it and where to prepare all these depende
 ## How to solve this problem
 You can design a more elegant solution but with this library the actor construction is very easy and straightforward. You can create the props of the actor this way:
 ```scala
-val props = deps.withFuture(findShop(shopId))
+val props = Dependencies().withFuture(findShop(shopId))
   .withVal(user)
   .requires(FutureDependency((user: User, shop: Shop) => Future(Basket(user, shop))))
   .requires(FunctionDependency((basket: Basket) => ImprovedBasket(basket)))
