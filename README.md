@@ -7,7 +7,7 @@ This is a library for type-safe, boilerplate-free dynamic dependency injection f
 
 First, you have to create `ProxyProps` for the actor you want to inject dependencies into. You need to pass a function taking `ANYTHING` and returning Akka `Props`. The `ANYHTHING` defines dependencies of your actor. In this case it means that the actor `PriceCalculator` requires two dependencies of types `Products` and `Promotions`:
 ```scala
-import com.github.wilaszekg.scaladdi.akkaProxyProps
+import com.github.wilaszekg.scaladdi.akka.ProxyProps
 
 new ProxyProps((products: Products, promotions: Promotions) => Props(new PriceCalculator(products, promotions)))
 ```
