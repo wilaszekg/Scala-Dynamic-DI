@@ -1,6 +1,6 @@
 organization := "com.github.wilaszekg"
 name := "scala-dynamic-di"
-version := "0.0.1-SNAPSHOT"
+version := "0.0.2-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
@@ -36,3 +36,12 @@ scmInfo := Some(ScmInfo(
   browseUrl = url("https://github.com/wilaszekg/Scala-Dynamic-DI"),
   connection = "scm:git:git@github.com:wilaszekg/Scala-Dynamic-DI.git"
 ))
+
+pomExtra := <xml:group>
+  <developers>
+    <developer>
+      <id>GrzegorzWilaszek</id>
+      <name>Grzegorz Wilaszek</name>
+    </developer>
+  </developers>
+</xml:group>
