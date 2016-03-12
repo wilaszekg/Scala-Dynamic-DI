@@ -1,7 +1,26 @@
 # Scala-Dynamic-DI
-This is a library for type-safe, boilerplate-free dynamic dependency injection for Akka actors. It offers a DI model for actors dependent on asynchronous dependencie, like:
+This is a library for type-safe, boilerplate-free dynamic dependency injection for Akka actors. It offers a DI model for actors dependent on asynchronous dependencies, like:
 * `Future` calls
 * messages received from other actors
+
+The `Dependencies` holds dependencies for an actor represented as `Future` computation. You can build dependencies for an actor using `Future`'s, functions and calls to other actors. `Dependencies` class is aware of types of all dependencies it holds - let's say reflected as a tuple. Each dependency type must be unique. This allows the library to automatically compose dependencies by their type. Each dependency has a set of required types and a type it can produce. This way you can build `Dependencies` with fluent API and while adding a new dependency (look at `requires` function below) Scala compiler will check that:
+* all required types for the new dependency are available
+* the new produced dependency type will be unique
+
+This means that if you break any of these rules, your code won't compile.
+
+You tell the lubrary how to produce your actor by creating `ProxyProps` instance which requires a function of any arity returning Akka `Props`. The types of arguments of this function must be found in `Dependencies` you are using to conifgure your actor - otherwise the code won't compile.
+
+```scala
+val proxyProps = new ProxyProps((products: Products, promotions: Promotions) => Props(new PriceCalculator(products, promotions)))
+
+val dependencies = Dependencies().withVal(user).withFuture(futureShop)
+      .requires(basketDependency)
+      .requires(promotionsDependency)
+      .requires(productsDependency)
+      
+val actorRef: ActorRef = system.actorOf(proxyProps from dependencies)
+```
 
 # Using the dynamic DI
 
