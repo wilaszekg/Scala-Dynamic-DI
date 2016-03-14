@@ -1,10 +1,25 @@
 # Scala-Dynamic-DI
 
 [![Join the chat at https://gitter.im/wilaszekg/Scala-Dynamic-DI](https://badges.gitter.im/wilaszekg/Scala-Dynamic-DI.svg)](https://gitter.im/wilaszekg/Scala-Dynamic-DI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This is a library for type-safe, boilerplate-free dynamic dependency injection for Akka actors. It offers a DI model for actors dependent on asynchronous dependencies, like:
 * `Future` calls
 * messages received from other actors
 
+## Current release
+```xml
+<dependency>
+	<groupId>com.github.wilaszekg</groupId>
+	<artifactId>scala-dynamic-di_2.11</artifactId>
+	<version>0.0.1</version>
+</dependency>
+```
+
+```
+libraryDependencies += "com.github.wilaszekg" %% "scala-dynamic-di" % "0.0.1"
+```
+
+## Overview
 The `Dependencies` holds dependencies for an actor represented as `Future` computation. You can build dependencies for an actor using `Future`'s, functions and calls to other actors. `Dependencies` class is aware of types of all dependencies it holds - let's say reflected as a tuple. Each dependency type must be unique. This allows the library to automatically compose dependencies by their type. Each dependency has a set of required types and a type it can produce. This way you can build `Dependencies` with fluent API and while adding a new dependency (look at `requires` function below) Scala compiler will check that:
 * all required types for the new dependency are available
 * the new produced dependency type will be unique
