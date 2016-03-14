@@ -1,4 +1,6 @@
 # Scala-Dynamic-DI
+
+[![Join the chat at https://gitter.im/wilaszekg/Scala-Dynamic-DI](https://badges.gitter.im/wilaszekg/Scala-Dynamic-DI.svg)](https://gitter.im/wilaszekg/Scala-Dynamic-DI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 This is a library for type-safe, boilerplate-free dynamic dependency injection for Akka actors. It offers a DI model for actors dependent on asynchronous dependencies, like:
 * `Future` calls
 * messages received from other actors
