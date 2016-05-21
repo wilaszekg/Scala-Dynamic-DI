@@ -3,6 +3,10 @@ package com.github.wilaszekg.scaladdi
 import shapeless.HList
 import shapeless.ops.hlist.RemoveAll
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound("""Implicit not found: com.github.wilaszekg.scaladdi.NotIn[${L},${M}]
+Not all types from ${M} can be found in ${L}""")
 trait FindAligned[L <: HList, M <: HList] extends (L => M) with Serializable {
   def apply(l: L): M
 }

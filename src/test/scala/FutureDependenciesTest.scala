@@ -1,4 +1,4 @@
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.github.wilaszekg.scaladdi.Dependencies
@@ -8,13 +8,13 @@ import org.scalatest.{Matchers, WordSpecLike}
 import shapeless.HNil
 
 import scala.concurrent.Await
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
+import scala.concurrent.duration.{FiniteDuration, _}
 import scala.language.postfixOps
 
 class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with WordSpecLike with ImplicitSender with Matchers {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+
   private val timeoutDuration: FiniteDuration = 100 millis
   implicit val timeout = Timeout(timeoutDuration)
 
@@ -31,5 +31,21 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
       val basket: Basket = Basket(user, shop)
       Await.result(dependencies, timeoutDuration) shouldBe (ImprovedBasket(basket) :: basket :: user :: "John" :: shop :: HNil)
     }
+
+    "not compile" when {
+      "future dependency duplicated" in {
+        """Dependencies().withFuture(findShop("Bakery")).withVal("John")
+          .requires(FunctionDependency((name: String) => User(name)))
+          .requires(basketDependency)
+          .requires(basketDependency)""" shouldNot compile
+      }
+
+      "can't find requirement" in {
+        """Dependencies().withFuture(findShop("Bakery")).withVal("John")
+          .requires(basketDependency)""" shouldNot compile
+      }
+    }
+
   }
+
 }
