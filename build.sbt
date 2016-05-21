@@ -9,8 +9,9 @@ homepage := Some(url("https://github.com/wilaszekg/Scala-Dynamic-DI"))
 licenses := Seq("Apache License, ASL Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 val AkkaVersion: String = "2.3.11"
+val ShapelessVersion = "2.3.1"
 
-libraryDependencies += "com.chuusai" %% "shapeless" % "2.2.5"
+libraryDependencies += "com.chuusai" %% "shapeless" % ShapelessVersion
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test"
