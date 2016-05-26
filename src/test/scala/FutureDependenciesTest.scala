@@ -6,6 +6,7 @@ import com.github.wilaszekg.scaladdi.akka.ActorDependency
 import model._
 import org.scalatest.{Matchers, WordSpecLike}
 import shapeless.HNil
+import shapeless.test.illTyped
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{FiniteDuration, _}
@@ -34,15 +35,23 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
 
     "not compile" when {
       "future dependency duplicated" in {
-        """Dependencies().withFuture(findShop("Bakery")).withVal("John")
-          .requires(FunctionDependency((name: String) => User(name)))
-          .requires(basketDependency)
-          .requires(basketDependency)""" shouldNot compile
+        illTyped(
+          """import com.github.wilaszekg.scaladdi.FunctionDependency
+
+          Dependencies().withFuture(findShop("Bakery")).withVal("John")
+            .requires(FunctionDependency((name: String) => User(name)))
+            .requires(basketDependency)
+            .requires(basketDependency)""",
+          ".*Implicit not found.*Type model.Basket is forbidden to be present in HList.*")
       }
 
       "can't find requirement" in {
-        """Dependencies().withFuture(findShop("Bakery")).withVal("John")
-          .requires(basketDependency)""" shouldNot compile
+        illTyped(
+          """import com.github.wilaszekg.scaladdi.FunctionDependency
+
+          Dependencies().withFuture(findShop("Bakery")).withVal("John")
+            .requires(basketDependency)""",
+          ".*Implicit not found.*Not all types from FutReq can be found in.*")
       }
     }
 
