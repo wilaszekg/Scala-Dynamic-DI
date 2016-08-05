@@ -11,12 +11,12 @@ This is a library for type-safe, boilerplate-free dynamic dependency injection f
 <dependency>
 	<groupId>com.github.wilaszekg</groupId>
 	<artifactId>scala-dynamic-di_2.11</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 </dependency>
 ```
 
 ```
-libraryDependencies += "com.github.wilaszekg" %% "scala-dynamic-di" % "0.0.1"
+libraryDependencies += "com.github.wilaszekg" %% "scala-dynamic-di" % "0.0.2"
 ```
 
 ## Overview
