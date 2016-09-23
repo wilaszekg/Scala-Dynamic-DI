@@ -28,7 +28,7 @@ class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_,
   }
 
   private def runDependencies() =
-    d.run.result.map(alignDeps).recover { case t => DependencyError(t) } pipeTo self
+    d.result.map(alignDeps).recover { case t => DependencyError(t) } pipeTo self
 
   override def receive = configure
 

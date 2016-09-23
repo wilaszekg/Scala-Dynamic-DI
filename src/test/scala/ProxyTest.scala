@@ -2,8 +2,8 @@ import akka.actor.SupervisorStrategy.{Decider, Stop}
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import com.github.wilaszekg.scaladdi.akka.{ActorDependency, ProxyProps}
-import com.github.wilaszekg.scaladdi.{Dependencies, DynamicConfigurationFailure}
+import com.github.wilaszekg.scaladdi.akka.{DynamicConfigurationFailure, ActorDependency, ProxyProps}
+import com.github.wilaszekg.scaladdi.Dependencies
 import model._
 import org.scalatest.{Matchers, WordSpecLike}
 

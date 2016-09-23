@@ -1,7 +1,7 @@
 package com.github.wilaszekg.scaladdi.akka
 
 import akka.actor.{Props, SupervisorStrategy}
-import com.github.wilaszekg.scaladdi.{Dependencies, DynamicConfigurationFailure, FindAligned}
+import com.github.wilaszekg.scaladdi.{Dependencies, FindAligned}
 import shapeless.HList
 import shapeless.ops.function.FnToProduct
 import shapeless.syntax.std.function._

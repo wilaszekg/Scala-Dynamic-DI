@@ -25,7 +25,7 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
       val dependencies = Dependencies().withFuture(findShop("Bakery")).withVal("John")
         .requires(ActorDependency(userFinder, (name: String) => FindUser(name), classOf[User]))
         .requires(basketDependency)
-        .requires(improvedBasketDependency).run.result
+        .requires(improvedBasketDependency).result
 
       val shop: Shop = Shop("Bakery")
       val user: User = User("John")
