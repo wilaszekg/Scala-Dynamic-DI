@@ -4,7 +4,6 @@ import com.github.wilaszekg.scaladdi.{FunctionDependency, FutureDependency}
 import scala.concurrent.Future
 
 package object model {
-  //  import scala.concurrent.ExecutionContext.Implicits.global
 
   def findUser(name: String) = Future.successful(User(name))
 
@@ -12,7 +11,7 @@ package object model {
 
   case class FindUser(name: String)
 
-  val basketDependency = FutureDependency((user: User, shop: Shop) => Future.successful(Basket(user, shop)))
+  val basketDependency: FutureDependency[(User, Shop) => Future[Basket]] = FutureDependency((user: User, shop: Shop) => Future.successful(Basket(user, shop)))
 
   val improvedBasketDependency = FunctionDependency((basket: Basket) => ImprovedBasket(basket))
 

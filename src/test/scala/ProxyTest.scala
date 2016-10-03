@@ -2,11 +2,12 @@ import akka.actor.SupervisorStrategy.{Decider, Stop}
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import com.github.wilaszekg.scaladdi.akka.{DynamicConfigurationFailure, ActorDependency, ProxyProps}
-import com.github.wilaszekg.scaladdi.Dependencies
+import com.github.wilaszekg.scaladdi.akka.{ActorDependency, DynamicConfigurationFailure, ProxyProps}
+import com.github.wilaszekg.scaladdi.{Dependencies, FutureDependency}
 import model._
 import org.scalatest.{Matchers, WordSpecLike}
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.{implicitConversions, postfixOps}
 
@@ -105,12 +106,12 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       checkBasketPrice(proxy)
     }
 
-    def failingUserFinder(failures: Int) =
+    def failingUserFinder(failures: Int): FutureDependency[String => Future[User]] =
       ActorDependency(system.actorOf(Props(new FailingUserFinder(failures))),
         (name: String) => FindUser(name),
         classOf[User])
 
-    def failingDependencies(userFinder: ActorDependency[Tuple1[String], User]) = {
+    def failingDependencies(userFinder: FutureDependency[String => Future[User]]) = {
       Dependencies().withFuture(findShop("Bakery")).withVal("John")
         .requires(userFinder)
         .requires(basketDependency)

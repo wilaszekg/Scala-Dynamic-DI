@@ -8,11 +8,11 @@ import shapeless.HList
 import scala.reflect.ClassTag
 
 class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_, Deps],
-  create: Required => Props,
-  dependenciesTriesMax: Option[Int],
-  supervision: SupervisorStrategy,
-  reConfigureAfterTerminated: Boolean,
-  dependencyError: Throwable => Any)
+                                                              create: Required => Props,
+                                                              dependenciesTriesMax: Option[Int],
+                                                              supervision: SupervisorStrategy,
+                                                              reConfigureAfterTerminated: Boolean,
+                                                              dependencyError: Throwable => Any)
   (implicit alignDeps: FindAligned[Deps, Required]) extends Actor with Stash {
 
   import scala.concurrent.ExecutionContext.Implicits.global

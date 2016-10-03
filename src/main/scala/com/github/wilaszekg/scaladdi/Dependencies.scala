@@ -1,54 +1,45 @@
 package com.github.wilaszekg.scaladdi
 
-import shapeless.{::, Generic, HList, HNil}
+import cats.implicits._
+import shapeless.ops.function.FnToProduct
+import shapeless.{::, HList, HNil}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
-class Dependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: => DepFutures)
-                                                                      (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues], ec: ExecutionContext) {
+class Dependencies[DepMs <: HList, DepValues <: HList : ClassTag](builder: SequenceBuilder[DepMs, DepValues, Future]) {
 
-  import FindAlignedOps._
-
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[Args, T])
-                                                      (implicit genArgs: Generic.Aux[Args, Req],
-                                                       toFutu: IsHListOfFutures[FutReq, Req],
-                                                       align: FindAligned[DepFutures, FutReq],
-                                                       tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    new Dependencies({
-      val materialised = dependencies
-      toFutu.hsequence(materialised.findAligned[FutReq])
-        .map(args => dependency.apply(genArgs from args)) :: materialised
-    })
+  def requires[F, T, Args <: HList, FutReq <: HList](dependency: FunctionDependency[F])
+                                                    (implicit funProduct: FnToProduct.Aux[F, Args => T],
+                                                     sequenced: IsSequence.Aux[Future, Args, FutReq],
+                                                     align: FindAligned[DepMs, FutReq],
+                                                     tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+    new Dependencies(builder.map(dependency.function))
   }
 
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[Args, T])
-                                                      (implicit genArgs: Generic.Aux[Args, Req],
-                                                       toFutu: IsHListOfFutures[FutReq, Req],
-                                                       align: FindAligned[DepFutures, FutReq],
-                                                       tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    new Dependencies({
-      val materialised = dependencies
-      toFutu.hsequence(materialised.findAligned[FutReq])
-        .flatMap(args => dependency.apply(genArgs from args)) :: materialised
-    })
+  def requires[F, Args <: HList, FutReq <: HList, T](dependency: FutureDependency[F])
+                                                    (implicit fnToM: FnFromHListToM[F, Args, T, Future],
+                                                     sequenced: IsSequence.Aux[Future, Args, FutReq],
+                                                     align: FindAligned[DepMs, FutReq],
+                                                     tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+    new Dependencies(builder.bind(dependency.function))
   }
 
-  def withFuture[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    new Dependencies(future :: dependencies)
+  def withFuture[T](m: Future[T])
+                   (implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+    new Dependencies(builder.add(m))
   }
 
-  def withVal[T](value: T)(implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    withFuture(Future.successful(value))
+  def withVal[T](value: T)
+                (implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+    new Dependencies(builder.pure(value))
   }
 
-  def result: Future[DepValues] = toDepFuture.hsequence(dependencies)
-
+  def result: Future[DepValues] = builder.result
 }
 
 object Dependencies {
 
-  def apply()(implicit ec: ExecutionContext): Dependencies[HNil, HNil] = {
-    new Dependencies(HNil)
-  }
+  def apply()(implicit ec: ExecutionContext): Dependencies[HNil, HNil] =
+    new Dependencies[HNil, HNil](SequenceBuilder[Future]())
 }
