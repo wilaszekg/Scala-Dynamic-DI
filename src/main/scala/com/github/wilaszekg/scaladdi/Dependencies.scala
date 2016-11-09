@@ -9,19 +9,19 @@ import scala.reflect.ClassTag
 
 class Dependencies[DepMs <: HList, DepValues <: HList : ClassTag](builder: SequenceBuilder[DepMs, DepValues, Future]) {
 
-  def requires[F, T, Args <: HList, FutReq <: HList](dependency: FunctionDependency[F])
-                                                    (implicit funProduct: FnToProduct.Aux[F, Args => T],
-                                                     sequenced: IsSequence.Aux[Future, Args, FutReq],
-                                                     align: FindAligned[DepMs, FutReq],
-                                                     tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+  def requires[F, T, Args <: HList, FutArgs <: HList](dependency: FunctionDependency[F])
+                                                     (implicit funProduct: FnToProduct.Aux[F, Args => T],
+                                                      sequenced: IsSequence.Aux[Future, Args, FutArgs],
+                                                      align: FindAligned[DepMs, FutArgs],
+                                                      tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
     new Dependencies(builder.map(dependency.function))
   }
 
-  def requires[F, Args <: HList, FutReq <: HList, T](dependency: FutureDependency[F])
-                                                    (implicit fnToM: FnFromHListToM[F, Args, T, Future],
-                                                     sequenced: IsSequence.Aux[Future, Args, FutReq],
-                                                     align: FindAligned[DepMs, FutReq],
-                                                     tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+  def requires[F, Args <: HList, FutArgs <: HList, T](dependency: FutureDependency[F])
+                                                     (implicit fnToM: FnFromHListToM[F, Args, T, Future],
+                                                      sequenced: IsSequence.Aux[Future, Args, FutArgs],
+                                                      align: FindAligned[DepMs, FutArgs],
+                                                      tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
     new Dependencies(builder.bind(dependency.function))
   }
 

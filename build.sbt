@@ -40,9 +40,6 @@ scmInfo := Some(ScmInfo(
   connection = "scm:git:git@github.com:wilaszekg/Scala-Dynamic-DI.git"
 ))
 
-//scalacOptions += "-Xlog-implicits"
-
-
 pomExtra := <xml:group>
   <developers>
     <developer>

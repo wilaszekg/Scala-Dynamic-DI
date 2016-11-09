@@ -52,7 +52,7 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
           """
           Dependencies().withFuture(findShop("Bakery")).withVal("John")
             .requires(basketDependency)""",
-          ".*Implicit not found.*Not all types from FutReq can be found in.*")
+          ".*Implicit not found.*Not all types from FutArgs can be found in.*")
       }
     }
 
