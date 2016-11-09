@@ -1,6 +1,7 @@
 package com.github.wilaszekg.scaladdi
 
 import cats.implicits._
+import com.github.wilaszekg.sequencebuilder._
 import shapeless.ops.function.FnToProduct
 import shapeless.{::, HList, HNil}
 

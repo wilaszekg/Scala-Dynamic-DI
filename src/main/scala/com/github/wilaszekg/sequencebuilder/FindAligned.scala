@@ -1,11 +1,11 @@
-package com.github.wilaszekg.scaladdi
+package com.github.wilaszekg.sequencebuilder
 
 import shapeless.HList
 import shapeless.ops.hlist.RemoveAll
 
 import scala.annotation.implicitNotFound
 
-@implicitNotFound("""Implicit not found: com.github.wilaszekg.scaladdi.FindAligned[${L},${M}]
+@implicitNotFound("""Implicit not found: com.github.wilaszekg.sequencebuilder.FindAligned[${L},${M}]
 Not all types from ${M} can be found in ${L}""")
 trait FindAligned[L <: HList, M <: HList] extends (L => M) with Serializable {
   def apply(l: L): M

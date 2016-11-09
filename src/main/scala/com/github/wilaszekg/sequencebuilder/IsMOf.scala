@@ -1,4 +1,4 @@
-package com.github.wilaszekg.scaladdi
+package com.github.wilaszekg.sequencebuilder
 
 import scala.language.higherKinds
 
