@@ -38,10 +38,8 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
       "future dependency duplicated" in {
         illTyped(
           """
-          import com.github.wilaszekg.scaladdi.FunctionDependency
-
           Dependencies().withFuture(findShop("Bakery")).withVal("John")
-            .requires(FunctionDependency((name: String) => User(name)))
+            .requires((name: String) => User(name))
             .requires(basketDependency)
             .requires(basketDependency)""",
           ".*Implicit not found.*Type model.Basket is forbidden to be present in HList.*")

@@ -6,15 +6,15 @@ import shapeless.ops.function.FnToProduct
 
 import scala.concurrent.Future
 
-sealed trait Dependency[F, Args <: HList, T]
+sealed private[scaladdi] trait Dependency[F, Args <: HList, T]
 
-case class FunctionDependency[F, Args <: HList, T](f: F)
-                                                  (implicit val funProduct: FnToProduct.Aux[F, Args => T]) extends Dependency[F, Args, T] {
+private[scaladdi] case class FunctionDependency[F, Args <: HList, T](f: F)
+                                                                    (implicit val funProduct: FnToProduct.Aux[F, Args => T]) extends Dependency[F, Args, T] {
 
 }
 
-case class FutureDependency[F, Args <: HList, T](f: F)
-                                                (implicit val fnFromHList: FnFromHListToM[F, Args, T, Future]) extends Dependency[F, Args, T] {
+private[scaladdi] case class FutureDependency[F, Args <: HList, T](f: F)
+                                                                  (implicit val fnFromHList: FnFromHListToM[F, Args, T, Future]) extends Dependency[F, Args, T] {
 
 }
 
