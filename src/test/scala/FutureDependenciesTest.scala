@@ -44,7 +44,7 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
             .requires(FunctionDependency((name: String) => User(name)))
             .requires(basketDependency)
             .requires(basketDependency)""",
-          ".*Implicit not found.*Type T is forbidden to be present in HList.*") //TODO: print model.Basket instead of T
+          ".*Implicit not found.*Type model.Basket is forbidden to be present in HList.*")
       }
 
       "can't find requirement" in {

@@ -11,9 +11,9 @@ package object model {
 
   case class FindUser(name: String)
 
-  val basketDependency: FutureDependency[(User, Shop) => Future[Basket]] = FutureDependency((user: User, shop: Shop) => Future.successful(Basket(user, shop)))
+  val basketDependency: (User, Shop) => Future[Basket] = (user: User, shop: Shop) => Future.successful(Basket(user, shop))
 
-  val improvedBasketDependency = FunctionDependency((basket: Basket) => ImprovedBasket(basket))
+  val improvedBasketDependency = (basket: Basket) => ImprovedBasket(basket)
 
   case object Calculate
 

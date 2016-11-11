@@ -106,12 +106,12 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       checkBasketPrice(proxy)
     }
 
-    def failingUserFinder(failures: Int): FutureDependency[String => Future[User]] =
+    def failingUserFinder(failures: Int): String => Future[User] =
       ActorDependency(system.actorOf(Props(new FailingUserFinder(failures))),
         (name: String) => FindUser(name),
         classOf[User])
 
-    def failingDependencies(userFinder: FutureDependency[String => Future[User]]) = {
+    def failingDependencies(userFinder: String => Future[User]) = {
       Dependencies().withFuture(findShop("Bakery")).withVal("John")
         .requires(userFinder)
         .requires(basketDependency)

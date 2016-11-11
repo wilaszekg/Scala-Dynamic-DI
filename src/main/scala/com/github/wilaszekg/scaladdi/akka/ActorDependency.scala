@@ -3,7 +3,6 @@ package com.github.wilaszekg.scaladdi.akka
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import com.github.wilaszekg.scaladdi.FutureDependency
 import shapeless._
 import shapeless.ops.function.{FnFromProduct, FnToProduct}
 import shapeless.syntax.std.function._
@@ -16,8 +15,8 @@ object ActorDependency {
                                                  (implicit fnToProduct: FnToProduct.Aux[F, Args => Q],
                                                   resultFunction: FnFromProduct.Aux[Args => Future[R], RF],
                                                   rfToProduct: FnToProduct[RF],
-                                                  timeout: Timeout, ec: ExecutionContext): FutureDependency[RF] = {
+                                                  timeout: Timeout, ec: ExecutionContext): RF = {
     val f: Args => Future[R] = (args: Args) => (who ? question.toProduct(args)).mapTo[R]
-    FutureDependency(f.fromProduct)
+    f.fromProduct
   }
 }
