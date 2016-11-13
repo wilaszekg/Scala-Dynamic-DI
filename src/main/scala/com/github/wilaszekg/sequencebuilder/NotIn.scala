@@ -1,10 +1,10 @@
-package com.github.wilaszekg.scaladdi
+package com.github.wilaszekg.sequencebuilder
 
 import shapeless.{<:!<, HNil, HList, ::}
 
 import scala.annotation.implicitNotFound
 
-@implicitNotFound("""Implicit not found: com.github.wilaszekg.scaladdi.NotIn[${T},${L}]
+@implicitNotFound("""Implicit not found: com.github.wilaszekg.sequencebuilder.NotIn[${T},${L}]
 Type ${T} is forbidden to be present in HList ${L}""")
 trait NotIn[T, L <: HList]
 

@@ -1,54 +1,43 @@
 package com.github.wilaszekg.scaladdi
 
-import shapeless.{::, Generic, HList, HNil}
+import cats.implicits._
+import com.github.wilaszekg.sequencebuilder._
+import shapeless.{::, HList, HNil}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
-class Dependencies[DepFutures <: HList, DepValues <: HList : ClassTag](dependencies: => DepFutures)
-                                                                      (implicit val toDepFuture: IsHListOfFutures[DepFutures, DepValues], ec: ExecutionContext) {
+class Dependencies[DepMs <: HList, DepValues <: HList : ClassTag](builder: SequenceBuilder[DepMs, DepValues, Future]) {
 
-  import FindAlignedOps._
-
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FunctionDependency[Args, T])
-                                                      (implicit genArgs: Generic.Aux[Args, Req],
-                                                       toFutu: IsHListOfFutures[FutReq, Req],
-                                                       align: FindAligned[DepFutures, FutReq],
-                                                       tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    new Dependencies({
-      val materialised = dependencies
-      toFutu.hsequence(materialised.findAligned[FutReq])
-        .map(args => dependency.apply(genArgs from args)) :: materialised
+  def requires[F, Args <: HList, FutArgs <: HList, T](dependency: Dependency[F, Args, T])
+                                                     (implicit sequenced: IsSequence.Aux[Future, Args, FutArgs],
+                                                      align: FindAligned[DepMs, FutArgs],
+                                                      tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+    new Dependencies(dependency match {
+      case futureDependency: FutureDependency[F, Args, T] =>
+        import futureDependency.fnFromHList
+        builder.bind(futureDependency.f)
+      case functionDependency: FunctionDependency[F, Args, T] =>
+        import functionDependency.funProduct
+        builder.map(functionDependency.f)
     })
   }
 
-  def requires[T, Args, Req <: HList, FutReq <: HList](dependency: FutureDependency[Args, T])
-                                                      (implicit genArgs: Generic.Aux[Args, Req],
-                                                       toFutu: IsHListOfFutures[FutReq, Req],
-                                                       align: FindAligned[DepFutures, FutReq],
-                                                       tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    new Dependencies({
-      val materialised = dependencies
-      toFutu.hsequence(materialised.findAligned[FutReq])
-        .flatMap(args => dependency.apply(genArgs from args)) :: materialised
-    })
+  def withFuture[T](m: Future[T])
+                   (implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+    new Dependencies(builder.add(m))
   }
 
-  def withFuture[T](future: Future[T])(implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    new Dependencies(future :: dependencies)
+  def withVal[T](value: T)
+                (implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepMs, T :: DepValues] = {
+    new Dependencies(builder.pure(value))
   }
 
-  def withVal[T](value: T)(implicit tNotInDeps: NotIn[T, DepValues]): Dependencies[Future[T] :: DepFutures, T :: DepValues] = {
-    withFuture(Future.successful(value))
-  }
-
-  def result: Future[DepValues] = toDepFuture.hsequence(dependencies)
-
+  def result: Future[DepValues] = builder.result
 }
 
 object Dependencies {
 
-  def apply()(implicit ec: ExecutionContext): Dependencies[HNil, HNil] = {
-    new Dependencies(HNil)
-  }
+  def apply()(implicit ec: ExecutionContext): Dependencies[HNil, HNil] =
+    new Dependencies[HNil, HNil](SequenceBuilder[Future]())
 }

@@ -1,7 +1,8 @@
 package com.github.wilaszekg.scaladdi.akka
 
 import akka.actor.{Props, SupervisorStrategy}
-import com.github.wilaszekg.scaladdi.{Dependencies, FindAligned}
+import com.github.wilaszekg.scaladdi.Dependencies
+import com.github.wilaszekg.sequencebuilder.FindAligned
 import shapeless.HList
 import shapeless.ops.function.FnToProduct
 import shapeless.syntax.std.function._

@@ -2,17 +2,18 @@ package com.github.wilaszekg.scaladdi.akka
 
 import akka.actor._
 import akka.pattern.pipe
-import com.github.wilaszekg.scaladdi.{Dependencies, FindAligned}
+import com.github.wilaszekg.scaladdi.Dependencies
+import com.github.wilaszekg.sequencebuilder.FindAligned
 import shapeless.HList
 
 import scala.reflect.ClassTag
 
 class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_, Deps],
-  create: Required => Props,
-  dependenciesTriesMax: Option[Int],
-  supervision: SupervisorStrategy,
-  reConfigureAfterTerminated: Boolean,
-  dependencyError: Throwable => Any)
+                                                              create: Required => Props,
+                                                              dependenciesTriesMax: Option[Int],
+                                                              supervision: SupervisorStrategy,
+                                                              reConfigureAfterTerminated: Boolean,
+                                                              dependencyError: Throwable => Any)
   (implicit alignDeps: FindAligned[Deps, Required]) extends Actor with Stash {
 
   import scala.concurrent.ExecutionContext.Implicits.global

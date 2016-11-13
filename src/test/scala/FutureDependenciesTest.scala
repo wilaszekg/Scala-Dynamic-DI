@@ -22,8 +22,9 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
   "Future Dependencies" should {
     "call base future only once" in {
       val userFinder = system.actorOf(Props(new OneResponseUserFinder))
+      val dependency = ActorDependency(userFinder, (name: String) => FindUser(name), classOf[User])
       val dependencies = Dependencies().withFuture(findShop("Bakery")).withVal("John")
-        .requires(ActorDependency(userFinder, (name: String) => FindUser(name), classOf[User]))
+        .requires(dependency)
         .requires(basketDependency)
         .requires(improvedBasketDependency).result
 
@@ -36,10 +37,9 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
     "not compile" when {
       "future dependency duplicated" in {
         illTyped(
-          """import com.github.wilaszekg.scaladdi.FunctionDependency
-
+          """
           Dependencies().withFuture(findShop("Bakery")).withVal("John")
-            .requires(FunctionDependency((name: String) => User(name)))
+            .requires((name: String) => User(name))
             .requires(basketDependency)
             .requires(basketDependency)""",
           ".*Implicit not found.*Type model.Basket is forbidden to be present in HList.*")
@@ -47,11 +47,10 @@ class FutureDependenciesTest extends TestKit(ActorSystem("test-system")) with Wo
 
       "can't find requirement" in {
         illTyped(
-          """import com.github.wilaszekg.scaladdi.FunctionDependency
-
+          """
           Dependencies().withFuture(findShop("Bakery")).withVal("John")
             .requires(basketDependency)""",
-          ".*Implicit not found.*Not all types from FutReq can be found in.*")
+          ".*Implicit not found.*Not all types from FutArgs can be found in.*")
       }
     }
 
