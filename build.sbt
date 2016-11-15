@@ -1,6 +1,6 @@
 organization := "com.github.wilaszekg"
 name := "scala-dynamic-di"
-version := "0.0.3-SNAPSHOT"
+version := "0.0.4-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
