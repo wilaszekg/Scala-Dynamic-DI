@@ -3,14 +3,17 @@ package com.github.wilaszekg.scaladdi.akka
 import akka.actor._
 import akka.pattern.pipe
 import com.github.wilaszekg.scaladdi.Dependencies
+import com.github.wilaszekg.scaladdi.akka.ProxyActor.RunDependencies
 import com.github.wilaszekg.sequencebuilder.FindAligned
 import shapeless.HList
 
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_, Deps],
                                                               create: Required => Props,
                                                               dependenciesTriesMax: Option[Int],
+                                                              dependenciesTriesRetryDelay: FiniteDuration,
                                                               supervision: SupervisorStrategy,
                                                               reConfigureAfterTerminated: Boolean,
                                                               dependencyError: Throwable => Any)
@@ -43,12 +46,15 @@ class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_,
     case DependencyError(t) =>
       failedDependencyTries += 1
       dependenciesTriesMax match {
-        case None => runDependencies()
-        case Some(max) if max > failedDependencyTries => runDependencies()
+        case None => scheduleDependenciesRun()
+        case Some(max) if max > failedDependencyTries => scheduleDependenciesRun()
         case _ =>
           context.parent ! dependencyError(t)
           context stop self
       }
+
+    case RunDependencies =>
+      runDependencies()
 
     case _ => stash()
   }
@@ -66,6 +72,8 @@ class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_,
       }
   }
 
+  private def scheduleDependenciesRun() = context.system.scheduler.scheduleOnce(dependenciesTriesRetryDelay, self, RunDependencies)
+
   private def reConfigure() = {
     context become configure
     failedDependencyTries = 0
@@ -74,4 +82,8 @@ class ProxyActor[Deps <: HList, Required <: HList : ClassTag](d: Dependencies[_,
 
   private case class DependencyError(t: Throwable)
 
+}
+
+object ProxyActor {
+  private case object RunDependencies
 }
