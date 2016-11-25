@@ -3,7 +3,7 @@ import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.github.wilaszekg.scaladdi.akka.{ActorDependency, DynamicConfigurationFailure, ProxyProps}
-import com.github.wilaszekg.scaladdi.{Dependencies, FutureDependency}
+import com.github.wilaszekg.scaladdi.Dependencies
 import model._
 import org.scalatest.{Matchers, WordSpecLike}
 
@@ -40,13 +40,27 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
       checkBasketPrice(proxy)
     }
 
-    "retry executing dependencies and succeed" in {
-      val proxyProps = new ProxyProps(actor _)
+    def createProxyFallingFewTimes(dependenciesTriesRetryDelay: FiniteDuration = 1 milli) = {
+      val proxyProps = new ProxyProps(actor _, dependenciesTriesRetryDelay = dependenciesTriesRetryDelay)
       val userFinder = failingUserFinder(2)
       val d = failingDependencies(userFinder)
       val props = proxyProps from d
 
-      val proxy = system.actorOf(props)
+      system.actorOf(props)
+    }
+
+    "retry executing dependencies and succeed" in {
+      val proxy = createProxyFallingFewTimes()
+
+      basketKeeperReply()
+      checkBasketPrice(proxy)
+    }
+
+    "use given retry delay for configuration until success" in {
+      val retryDelay = 100 milli
+      val proxy = createProxyFallingFewTimes(retryDelay)
+
+      basketKeeper.expectNoMsg(retryDelay / 2)
 
       basketKeeperReply()
       checkBasketPrice(proxy)
@@ -58,7 +72,7 @@ class ProxyTest extends TestKit(ActorSystem("test-system")) with WordSpecLike wi
 
         override def receive: Receive = {
           case "start" => testReceiver = sender
-            val proxyProps = new ProxyProps(actor _, dependenciesTriesMax = Some(3))
+            val proxyProps = new ProxyProps(actor _, dependenciesTriesMax = Some(3), dependenciesTriesRetryDelay = 1 milli)
             val userFinder = failingUserFinder(3)
             val d = failingDependencies(userFinder)
             val props = proxyProps from d
