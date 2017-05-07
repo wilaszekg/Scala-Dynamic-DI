@@ -2,20 +2,21 @@ organization := "com.github.wilaszekg"
 name := "scala-dynamic-di"
 version := "0.0.5-SNAPSHOT"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.2"
 
 description := "Dynamic dependency injection for Akka"
 homepage := Some(url("https://github.com/wilaszekg/Scala-Dynamic-DI"))
 licenses := Seq("Apache License, ASL Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-val AkkaVersion: String = "2.3.11"
-val ShapelessVersion = "2.3.1"
-val CatsVersion = "0.7.2"
+val AkkaVersion: String = "2.5.1"
+val ShapelessVersion = "2.3.2"
+val CatsVersion = "0.9.0"
+val ScalTestVersion = "3.0.3"
 
 libraryDependencies += "com.chuusai" %% "shapeless" % ShapelessVersion
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % ScalTestVersion % "test"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % "test"
 libraryDependencies += "org.typelevel" %% "cats" % CatsVersion
 
